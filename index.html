@@ -2238,5 +2238,10 @@
         }
       });
     </script>
+    <script>
+      window.addEventListener('pagehide', () => {
+        navigator.sendBeacon('/api/admin/logout');
+      });
+    </script>
   </body>
 </html>

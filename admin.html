@@ -33,7 +33,7 @@
       <button data-tab="analytics">Analytics</button>
       <button data-tab="pages">Pages</button>
       <button data-tab="settings">Settings</button>
-      <a href="/admin/pos">POS</a>
+      <a href="/admin/pos" onclick="sessionStorage.setItem('vs_admin_internal_navigation', '1')">POS</a>
     </nav>
   </aside>
   <section class="main">
@@ -44,6 +44,7 @@
       </div>
       <div class="top-actions">
         <span class="status-badge">Online</span>
+        <a class="top-link" href="/admin/pos" onclick="sessionStorage.setItem('vs_admin_internal_navigation', '1')">Billing POS</a>
         <a class="top-link" href="/">&larr; Back to website</a>
         <a class="top-link" href="/" target="_blank" rel="noreferrer">View store</a>
       </div>
@@ -54,6 +55,10 @@
 </main>
 <script>
   window.addEventListener('pagehide', () => {
+    if (sessionStorage.getItem('vs_admin_internal_navigation') === '1') {
+      sessionStorage.removeItem('vs_admin_internal_navigation');
+      return;
+    }
     navigator.sendBeacon('/api/admin/logout');
   });
 

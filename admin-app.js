@@ -123,6 +123,7 @@ function dashboard() {
         <p class="subtle">Track sales, react to stock pressure, and move faster between the most important operations.</p>
       </div>
       <div class="quick-actions">
+        <a class="action-btn alt" href="/admin/pos">Billing POS</a>
         <button class="action-btn" data-quick-tab="products">New product</button>
         <button class="action-btn" data-quick-tab="studio">Add section</button>
         <button class="action-btn" data-quick-tab="orders">Manage orders</button>
