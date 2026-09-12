@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vastra Sanvedan | Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+<main class="shell" id="shell">
+  <aside class="side">
+    <div class="brand-block">
+      <div class="mark">VS</div>
+      <div>
+        <strong>Vastra Sanvedan</strong>
+        <small>Control centre</small>
+      </div>
+    </div>
+    <nav id="nav">
+      <button data-tab="dashboard">Dashboard</button>
+      <button data-tab="studio">Homepage Studio</button>
+      <button data-tab="banners">Banners</button>
+      <button data-tab="categories">Categories</button>
+      <button data-tab="brands">Brands</button>
+      <button data-tab="products">Products</button>
+      <button data-tab="barcodeStudio">Barcode Studio</button>
+      <button data-tab="inventory">Inventory</button>
+      <button data-tab="orders">Orders</button>
+      <button data-tab="customers">Customers</button>
+      <button data-tab="payments">Payments</button>
+      <button data-tab="analytics">Analytics</button>
+      <button data-tab="pages">Pages</button>
+      <button data-tab="settings">Settings</button>
+      <a href="/admin/pos">POS</a>
+    </nav>
+  </aside>
+  <section class="main">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Operations</p>
+        <h1>Store dashboard</h1>
+      </div>
+      <div class="top-actions">
+        <span class="status-badge">Online</span>
+        <a class="top-link" href="/">&larr; Back to website</a>
+        <a class="top-link" href="/" target="_blank" rel="noreferrer">View store</a>
+      </div>
+    </header>
+    <div class="notice" id="notice"></div>
+    <div id="view"></div>
+  </section>
+</main>
+<script src="/admin-app.js?v=barcode-studio-2"></script>
+</body>
+</html>

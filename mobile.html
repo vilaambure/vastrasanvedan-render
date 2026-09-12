@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f1d36" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Vastra Sanvedan | Mobile Live Tracker</title>
+    <style>
+      :root {
+        --navy: #0f1d36;
+        --navy-soft: #172947;
+        --blue: #5e8cff;
+        --ice: #eff5ff;
+        --ink: #11213d;
+        --muted: #7890ad;
+        --line: rgba(142, 168, 202, 0.24);
+        --shadow-dark: 14px 18px 34px rgba(10, 25, 49, 0.23);
+        --shadow-light: -10px -10px 24px rgba(255,255,255,0.95);
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        color: var(--ink);
+        background: linear-gradient(145deg, #e6eefb, #f8fbff 52%, #e8f0fb);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body { padding: 20px 14px 36px; }
+      .phone-shell { width: min(100%, 520px); margin: 0 auto; }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .eyebrow {
+        margin: 0 0 5px;
+        color: var(--muted);
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        color: var(--navy);
+        font-size: clamp(1.45rem, 7vw, 2rem);
+        letter-spacing: -0.06em;
+      }
+
+      .live-dot {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 12px;
+        border-radius: 999px;
+        color: #267854;
+        background: #e6fbf1;
+        border: 1px solid #c2eedb;
+        font-size: 0.75rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .live-dot::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #36c88a;
+        box-shadow: 0 0 0 4px rgba(54, 200, 138, 0.16);
+      }
+
+      .install-button {
+        display: none;
+        width: 100%;
+        margin: 0 0 18px;
+        color: var(--navy);
+        background: linear-gradient(145deg, #ffffff, #dce9fb);
+        box-shadow: 8px 9px 16px rgba(39, 68, 112, 0.14), -6px -6px 14px rgba(255,255,255,0.9);
+      }
+
+      .install-button.visible { display: block; }
+
+      .card {
+        border: 1px solid rgba(255,255,255,0.75);
+        border-radius: 25px;
+        background: rgba(244, 249, 255, 0.72);
+        box-shadow: var(--shadow-dark), var(--shadow-light);
+        backdrop-filter: blur(18px);
+      }
+
+      .access-card { padding: 20px; margin-bottom: 18px; }
+      .access-card h2 { margin: 0 0 8px; font-size: 1.1rem; }
+      .access-card p { margin: 0 0 15px; color: var(--muted); font-size: 0.84rem; line-height: 1.45; }
+
+      .pin-row { display: flex; gap: 9px; }
+      input, button {
+        min-height: 48px;
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        font: inherit;
+      }
+
+      input {
+        flex: 1;
+        min-width: 0;
+        padding: 0 14px;
+        color: var(--ink);
+        background: rgba(255,255,255,0.83);
+        outline: none;
+      }
+
+      input:focus { border-color: rgba(94,140,255,0.7); box-shadow: 0 0 0 4px rgba(94,140,255,0.12); }
+
+      button {
+        padding: 0 16px;
+        color: #fff;
+        background: linear-gradient(145deg, #668fff, #416edc);
+        box-shadow: 6px 8px 14px rgba(47, 85, 174, 0.25), inset 0 1px 0 rgba(255,255,255,0.35);
+        cursor: pointer;
+        font-weight: 800;
+        transition: transform 0.15s ease, filter 0.15s ease;
+      }
+
+      button:active { transform: translateY(2px) scale(0.98); filter: brightness(0.94); }
+      .message { min-height: 18px; margin: 10px 0 0; color: #c54444; font-size: 0.8rem; font-weight: 700; }
+
+      #dashboard { display: none; }
+      #dashboard.unlocked { display: block; }
+
+      .dashboard-head { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin: 4px 2px 14px; }
+      .dashboard-head p { margin: 0; color: var(--muted); font-size: 0.8rem; }
+      .refresh-note { text-align: right; }
+
+      .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .metric-card { min-height: 130px; padding: 18px; position: relative; overflow: hidden; }
+      .metric-card::after { content: ""; position: absolute; right: -34px; bottom: -44px; width: 112px; height: 112px; border-radius: 50%; background: rgba(94,140,255,0.1); }
+      .metric-label { display: block; color: var(--muted); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; }
+      .metric-value { position: relative; z-index: 1; margin-top: 14px; color: var(--navy); font-size: clamp(1.55rem, 8vw, 2.35rem); font-weight: 900; letter-spacing: -0.07em; }
+      .metric-card.primary { color: #fff; background: linear-gradient(145deg, #172b50, #0d1a31); }
+      .metric-card.primary .metric-label, .metric-card.primary .metric-value { color: #fff; }
+      .metric-card.primary::after { background: rgba(94,140,255,0.2); }
+
+      .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+      .comparison-card { min-height: 122px; padding: 17px; }
+      .comparison-card.today { background: linear-gradient(145deg, #dce9ff, #f8fbff); }
+      .comparison-card.yesterday { background: linear-gradient(145deg, #eef1f7, #ffffff); }
+      .comparison-label { display: block; color: var(--muted); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
+      .comparison-value { margin-top: 13px; color: var(--navy); font-size: clamp(1.35rem, 7vw, 2rem); font-weight: 900; letter-spacing: -0.07em; }
+      .date-filter { display: flex; align-items: center; gap: 10px; padding: 13px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 17px; background: rgba(255,255,255,0.55); }
+      .date-filter label { flex: 1; color: var(--muted); font-size: 0.76rem; font-weight: 800; }
+      .date-filter input { flex: 0 1 155px; min-height: 42px; padding: 0 10px; }
+      .selected-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+      .selected-stat { padding: 11px 8px; text-align: center; border-radius: 13px; background: rgba(255,255,255,0.62); border: 1px solid var(--line); }
+      .selected-stat span { display: block; color: var(--muted); font-size: 0.62rem; font-weight: 800; text-transform: uppercase; }
+      .selected-stat strong { display: block; margin-top: 5px; color: var(--navy); font-size: 0.96rem; }
+
+      .section-card { margin-top: 18px; padding: 18px; }
+      .section-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+      .section-title h2 { margin: 0; font-size: 1.04rem; letter-spacing: -0.04em; }
+      .count { color: var(--muted); font-size: 0.75rem; font-weight: 800; }
+
+      .bill-list { display: grid; gap: 10px; }
+      .bill-row { display: flex; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,0.55); }
+      .bill-meta { min-width: 0; }
+      .bill-id { color: var(--navy); font-size: 0.87rem; font-weight: 900; }
+      .bill-sub { margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 0.72rem; text-overflow: ellipsis; white-space: nowrap; }
+      .bill-amount { align-self: center; color: var(--navy); font-size: 0.9rem; font-weight: 900; white-space: nowrap; }
+      .empty { margin: 0; color: var(--muted); font-size: 0.85rem; }
+
+      .lock-button { width: 100%; margin-top: 16px; color: var(--navy); background: var(--ice); box-shadow: 6px 7px 14px rgba(39, 68, 112, 0.12), -5px -5px 12px rgba(255,255,255,0.9); }
+      .notification { position: fixed; left: 14px; right: 14px; bottom: 20px; z-index: 10; display: none; width: min(492px, calc(100% - 28px)); margin: 0 auto; padding: 16px 18px; color: #fff; background: linear-gradient(135deg, #172e58, #0d1b35); border: 1px solid rgba(130,168,255,0.42); border-radius: 18px; box-shadow: 0 20px 45px rgba(10, 25, 49, 0.32); font-weight: 800; animation: slide-up 0.3s ease both; }
+      .notification.show { display: block; }
+
+      .drawer-backdrop { position: fixed; inset: 0; z-index: 20; display: none; background: rgba(10, 25, 49, 0.35); }
+      .drawer-backdrop.open { display: block; }
+      .bill-drawer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; width: min(520px, 100%); max-height: 80vh; margin: 0 auto; padding: 20px 18px 26px; overflow: auto; border: 1px solid rgba(255,255,255,0.8); border-bottom: 0; border-radius: 26px 26px 0 0; background: rgba(246,250,255,0.96); box-shadow: 0 -22px 50px rgba(10, 25, 49, 0.22); transform: translateY(105%); transition: transform 0.28s ease; }
+      .drawer-backdrop.open .bill-drawer { transform: translateY(0); }
+      .drawer-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 15px; }
+      .drawer-head h2 { margin: 0; color: var(--navy); font-size: 1.15rem; }
+      .drawer-close { min-height: 38px; width: 38px; padding: 0; border-radius: 50%; }
+      .drawer-meta { margin-bottom: 15px; color: var(--muted); font-size: 0.78rem; line-height: 1.6; }
+      .item-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 12px; margin-top: 8px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+      .item-row strong { color: var(--navy); font-size: 0.88rem; }
+      .item-row small { display: block; margin-top: 4px; color: var(--muted); }
+      .item-row b { align-self: center; color: var(--navy); }
+
+      @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      @media (max-width: 380px) { .metric-grid, .comparison-grid { gap: 10px; } .metric-card, .comparison-card { padding: 14px; } .metric-value, .comparison-value { font-size: 1.45rem; } .pin-row { flex-direction: column; } .date-filter { align-items: flex-start; flex-direction: column; } .date-filter input { width: 100%; flex-basis: auto; } }
+    </style>
+  </head>
+  <body>
+    <main class="phone-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Vastra Sanvedan</p>
+          <h1>Mobile Live Tracker</h1>
+        </div>
+        <div id="liveStatus" class="live-dot">Locked</div>
+      </header>
+
+      <button id="installButton" class="card install-button" type="button">📥 App Install Karein</button>
+
+      <section id="accessCard" class="card access-card">
+        <h2>Secure Owner Access</h2>
+        <p>Enter the private tracker PIN to view live cloud sales. The PIN is sent only to the protected server endpoint.</p>
+        <form id="accessForm" class="pin-row">
+          <input id="pinInput" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Secret PIN / Password" required />
+          <button type="submit">Unlock</button>
+        </form>
+        <div id="accessMessage" class="message" role="status"></div>
+      </section>
+
+      <section id="dashboard" aria-live="polite">
+        <div class="dashboard-head">
+          <div>
+            <p>Cloud snapshot</p>
+            <strong id="lastUpdated">Waiting for first fetch</strong>
+          </div>
+          <div class="refresh-note">
+            <p>Auto refresh</p>
+            <strong>Every 10 seconds</strong>
+          </div>
+        </div>
+
+        <div class="comparison-grid">
+          <article class="card comparison-card today">
+            <span class="comparison-label">Today's Sales 📅</span>
+            <div id="todaySalesValue" class="comparison-value">₹0</div>
+          </article>
+          <article class="card comparison-card yesterday">
+            <span class="comparison-label">Yesterday's Sales ⏳</span>
+            <div id="yesterdaySalesValue" class="comparison-value">₹0</div>
+          </article>
+        </div>
+
+        <div class="metric-grid">
+          <article class="card metric-card primary"><span class="metric-label">Total Turnover</span><div id="turnoverValue" class="metric-value">₹0</div></article>
+          <article class="card metric-card"><span class="metric-label">Bills</span><div id="billsValue" class="metric-value">0</div></article>
+          <article class="card metric-card"><span class="metric-label">Cash Collection</span><div id="cashValue" class="metric-value">₹0</div></article>
+          <article class="card metric-card"><span class="metric-label">UPI Collection</span><div id="upiValue" class="metric-value">₹0</div></article>
+        </div>
+
+        <section class="card section-card">
+          <div class="section-title"><h2>Latest Cloud Bills</h2><span id="billCount" class="count">0 shown</span></div>
+          <div class="date-filter">
+            <label for="dateFilter">📅 Select Date</label>
+            <input id="dateFilter" type="date" />
+          </div>
+          <div class="selected-summary">
+            <div class="selected-stat"><span>Selected Turnover</span><strong id="selectedTurnover">₹0</strong></div>
+            <div class="selected-stat"><span>Selected Cash</span><strong id="selectedCash">₹0</strong></div>
+            <div class="selected-stat"><span>Selected UPI</span><strong id="selectedUpi">₹0</strong></div>
+          </div>
+          <div id="billList" class="bill-list"><p class="empty">No bills found.</p></div>
+        </section>
+
+        <button id="lockButton" class="lock-button">Lock Tracker</button>
+      </section>
+    </main>
+
+    <div id="notification" class="notification" role="alert"></div>
+
+    <div id="drawerBackdrop" class="drawer-backdrop">
+      <section class="bill-drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+        <div class="drawer-head">
+          <h2 id="drawerTitle">Bill Details</h2>
+          <button id="drawerClose" class="drawer-close" aria-label="Close bill details">×</button>
+        </div>
+        <div id="drawerMeta" class="drawer-meta"></div>
+        <div id="drawerItems"></div>
+      </section>
+    </div>
+
+    <script>
+      const POLL_INTERVAL = 10000;
+      const API_BASE_URL = 'http://10.118.79.1:5000';
+      const mobileSummaryUrl = () => `${API_BASE_URL}/api/mobile/summary?date=${encodeURIComponent(selectedDateValue())}`;
+      const state = { pin: '', timer: null, lastBillId: null };
+      let deferredInstallPrompt = null;
+      const $ = (id) => document.getElementById(id);
+
+      function money(value) {
+        return `₹${Number(value || 0).toLocaleString('en-IN')}`;
+      }
+
+      function showMessage(text) {
+        $('accessMessage').textContent = text;
+      }
+
+      function showNotification(text) {
+        const notification = $('notification');
+        notification.textContent = text;
+        notification.classList.add('show');
+        window.setTimeout(() => notification.classList.remove('show'), 6000);
+      }
+
+      function selectedDateValue() {
+        return $('dateFilter').value || new Date().toISOString().slice(0, 10);
+      }
+
+      function setLocked(locked) {
+        $('dashboard').classList.toggle('unlocked', !locked);
+        $('accessCard').style.display = locked ? 'block' : 'none';
+        $('liveStatus').textContent = locked ? 'Locked' : 'Live';
+        state.pin = locked ? '' : state.pin;
+        if (locked && state.timer) {
+          window.clearInterval(state.timer);
+          state.timer = null;
+        }
+      }
+
+      function renderBills(orders) {
+        $('billCount').textContent = `${orders.length} shown`;
+        $('billList').innerHTML = orders.map((order) => {
+          const when = order.createdAt ? new Date(order.createdAt).toLocaleString('en-IN') : 'Recent';
+          return `<article class="bill-row" data-order-id="${order.id}"><div class="bill-meta"><div class="bill-id">${order.invoiceNumber || 'Invoice'}</div><div class="bill-sub">${order.customerName || 'Walk-in Customer'} · ${when} · ${order.paymentMode || ''}</div></div><div class="bill-amount">${money(order.totalAmount)}</div></article>`;
+        }).join('') || '<p class="empty">No cloud bills found.</p>';
+
+        $('billList').querySelectorAll('[data-order-id]').forEach((row) => row.addEventListener('click', () => openDrawer(orders.find((order) => order.id === row.dataset.orderId))));
+      }
+
+      function renderSnapshot(snapshot) {
+        $('todaySalesValue').textContent = money(snapshot.today.totalTurnover);
+        $('yesterdaySalesValue').textContent = money(snapshot.yesterday.totalTurnover);
+        $('turnoverValue').textContent = money(snapshot.selected.totalTurnover);
+        $('billsValue').textContent = Number(snapshot.selected.billCount || 0).toLocaleString('en-IN');
+        $('cashValue').textContent = money(snapshot.selected.cashCollection);
+        $('upiValue').textContent = money(snapshot.selected.upiCollection);
+        $('selectedTurnover').textContent = money(snapshot.selected.totalTurnover);
+        $('selectedCash').textContent = money(snapshot.selected.cashCollection);
+        $('selectedUpi').textContent = money(snapshot.selected.upiCollection);
+        $('lastUpdated').textContent = `Updated ${new Date(snapshot.generatedAt).toLocaleTimeString('en-IN')}`;
+        renderBills(snapshot.recentOrders || []);
+      }
+
+      async function fetchSnapshot(showErrors = true) {
+        try {
+          const response = await fetch(mobileSummaryUrl(), {
+            headers: { 'X-Mobile-Pin': state.pin },
+            cache: 'no-store'
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.message || 'Unable to fetch cloud data.');
+
+          const newest = payload.recentOrders && payload.recentOrders[0];
+          if (newest && state.lastBillId && newest.id !== state.lastBillId) {
+            showNotification(`🧾 ${newest.invoiceNumber} New Bill Generated!`);
+          }
+          if (newest) state.lastBillId = newest.id;
+          renderSnapshot(payload);
+        } catch (error) {
+          if (showErrors) showMessage(error.message);
+          if (error.message.includes('PIN') || error.message.includes('access')) lockTracker();
+        }
+      }
+
+      async function unlock(event) {
+        event.preventDefault();
+        const pin = $('pinInput').value.trim();
+        if (!pin) return;
+        state.pin = pin;
+        showMessage('Checking secure cloud access...');
+        try {
+          const response = await fetch(mobileSummaryUrl(), { headers: { 'X-Mobile-Pin': state.pin }, cache: 'no-store' });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.message || 'Access denied.');
+          const newest = payload.recentOrders && payload.recentOrders[0];
+          state.lastBillId = newest ? newest.id : null;
+          renderSnapshot(payload);
+          showMessage('');
+          setLocked(false);
+          state.timer = window.setInterval(() => fetchSnapshot(false), POLL_INTERVAL);
+        } catch (error) {
+          state.pin = '';
+          showMessage(error.message);
+        }
+      }
+
+      function lockTracker() {
+        state.pin = '';
+        $('pinInput').value = '';
+        showMessage('');
+        setLocked(true);
+      }
+
+      function openDrawer(order) {
+        if (!order) return;
+        $('drawerTitle').textContent = order.invoiceNumber || 'Bill Details';
+        $('drawerMeta').innerHTML = `<strong>${order.customerName || 'Walk-in Customer'}</strong><br>${order.paymentMode || ''} · ${order.createdAt ? new Date(order.createdAt).toLocaleString('en-IN') : ''}<br>Total: <strong>${money(order.totalAmount)}</strong>`;
+        $('drawerItems').innerHTML = (order.items || []).map((item) => `<div class="item-row"><div><strong>${item.productName || 'Item'}</strong><small>Size: ${item.size || '-'} · Qty: ${item.quantity || 0} · Unit: ${money(item.unitPrice)}</small></div><b>${money(item.totalAmount)}</b></div>`).join('') || '<p class="empty">No item details available.</p>';
+        $('drawerBackdrop').classList.add('open');
+      }
+
+      function closeDrawer() {
+        $('drawerBackdrop').classList.remove('open');
+      }
+
+      window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        $('installButton').classList.add('visible');
+      });
+
+      $('installButton').addEventListener('click', async () => {
+        if (!deferredInstallPrompt) {
+          showMessage('Browser menu se Add to Home Screen select karein.');
+          return;
+        }
+        deferredInstallPrompt.prompt();
+        const result = await deferredInstallPrompt.userChoice;
+        if (result.outcome === 'accepted') $('installButton').classList.remove('visible');
+        deferredInstallPrompt = null;
+      });
+
+      window.addEventListener('appinstalled', () => {
+        $('installButton').classList.remove('visible');
+      });
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+
+      $('accessForm').addEventListener('submit', unlock);
+      $('lockButton').addEventListener('click', lockTracker);
+      $('dateFilter').value = new Date().toISOString().slice(0, 10);
+      $('dateFilter').addEventListener('change', () => {
+        if (state.pin) fetchSnapshot();
+      });
+      $('drawerClose').addEventListener('click', closeDrawer);
+      $('drawerBackdrop').addEventListener('click', (event) => {
+        if (event.target.id === 'drawerBackdrop') closeDrawer();
+      });
+      setLocked(true);
+    </script>
+  </body>
+</html>

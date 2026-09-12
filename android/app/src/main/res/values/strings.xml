@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Vastra Sanvedan</string>
+    <string name="title_activity_main">Vastra Sanvedan</string>
+    <string name="package_name">com.vastrasanvedan.pos</string>
+    <string name="custom_url_scheme">com.vastrasanvedan.pos</string>
+</resources>
