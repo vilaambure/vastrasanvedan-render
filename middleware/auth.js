@@ -49,8 +49,19 @@ function clearCookie(name) {
   return cookieHeader(name, "", 0);
 }
 
-function requireAdmin(_req, _res, next) {
+function requireAdmin(req, res, next) {
+  const token = readCookie(req, "vs_admin_session");
+  const session = token && req.app.locals.adminSessions?.get(token);
+  if (!session) {
+    return res.status(401).json({ success: false, message: "Admin access required." });
+  }
+  req.adminSession = token;
   next();
+}
+
+function hasValidAdminSession(req) {
+  const token = readCookie(req, "vs_admin_session");
+  return Boolean(token && req.app.locals.adminSessions?.get(token));
 }
 
 async function requireCustomer(req, res, next) {
@@ -86,6 +97,7 @@ module.exports = {
   cookieHeader,
   clearCookie,
   requireAdmin,
+  hasValidAdminSession,
   requireCustomer,
   optionalCustomer,
 };

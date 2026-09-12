@@ -15,7 +15,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const { migrateLegacyProducts } = require("./controllers/productController");
 const { ensureUploadDir } = require("./controllers/mediaController");
 const Order = require("./models/orderModel");
-const { adminPasswordMatches, cookieHeader, clearCookie, readCookie, requireAdmin } = require("./middleware/auth");
+const { adminPasswordMatches, cookieHeader, clearCookie, readCookie, requireAdmin, hasValidAdminSession } = require("./middleware/auth");
 const { uploadMedia } = require("./controllers/mediaController");
 
 const app = express();
@@ -42,9 +42,37 @@ app.use((req, res, next) => {
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(express.static(__dirname, { index: false }));
 
-app.get("/admin", (_req, res) => res.sendFile(__dirname + "/admin.html"));
-app.get("/admin/pos", (_req, res) => {
+app.get("/admin/login", (_req, res) => res.sendFile(__dirname + "/admin-login.html"));
+app.get("/admin", (req, res) => {
+  if (!hasValidAdminSession(req)) return res.redirect("/admin/login");
+  res.sendFile(__dirname + "/admin.html");
+});
+app.get("/admin/pos", (req, res) => {
+  if (!hasValidAdminSession(req)) return res.redirect("/admin/login");
   res.sendFile(__dirname + "/index.html");
+});
+
+app.post("/api/admin/login", (req, res) => {
+  const password = String(req.body?.password ?? "").trim();
+  if (!adminPasswordMatches(password)) {
+    return res.status(401).json({ success: false, message: "Invalid admin password." });
+  }
+  const token = crypto.randomBytes(24).toString("hex");
+  adminSessions.set(token, { createdAt: new Date().toISOString() });
+  res.set("Set-Cookie", cookieHeader("vs_admin_session", token, 60 * 60 * 12));
+  return res.json({ success: true, message: "Admin login successful." });
+});
+
+app.post("/api/admin/logout", (req, res) => {
+  const token = readCookie(req, "vs_admin_session");
+  if (token) adminSessions.delete(token);
+  res.set("Set-Cookie", clearCookie("vs_admin_session"));
+  return res.json({ success: true, message: "Logged out." });
+});
+
+app.get("/api/admin/me", (req, res) => {
+  if (!hasValidAdminSession(req)) return res.status(401).json({ success: false, message: "Admin session required." });
+  return res.json({ success: true, authenticated: true });
 });
 
 app.get("/api/health", (_req, res) => {
