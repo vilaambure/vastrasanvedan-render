@@ -1,5 +1,16 @@
-const API_BASE_URL = "http://10.219.230.26:5000";
-const apiUrl = (url) => `${API_BASE_URL}${url}`;
+const API_BASE_URL = (() => {
+  const explicit = typeof window !== "undefined" ? (window.__API_BASE_URL__ || window.__APP_CONFIG__?.apiBaseUrl || "") : "";
+  const base = String(explicit || "").trim().replace(/\/+$/, "");
+  if (base) return base;
+  if (typeof window !== "undefined" && window.location && window.location.origin) {
+    return String(window.location.origin).replace(/\/+$/, "");
+  }
+  return "";
+})();
+const apiUrl = (url) => {
+  const normalized = url.startsWith("/") ? url : `/${url}`;
+  return API_BASE_URL ? `${API_BASE_URL}${normalized}` : normalized;
+};
 
 const state = {
   products: [],

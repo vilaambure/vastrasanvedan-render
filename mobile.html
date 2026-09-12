@@ -286,8 +286,16 @@
 
     <script>
       const POLL_INTERVAL = 10000;
-      const API_BASE_URL = 'http://10.118.79.1:5000';
-      const mobileSummaryUrl = () => `${API_BASE_URL}/api/mobile/summary?date=${encodeURIComponent(selectedDateValue())}`;
+      const API_BASE_URL = (() => {
+        const explicit = window.__API_BASE_URL__ || window.__APP_CONFIG__?.apiBaseUrl || '';
+        const base = String(explicit || '').trim().replace(/\/+$/, '');
+        if (base) return base;
+        if (window.location && window.location.origin) {
+          return String(window.location.origin).replace(/\/+$/, '');
+        }
+        return '';
+      })();
+      const mobileSummaryUrl = () => `${API_BASE_URL ? API_BASE_URL : ''}/api/mobile/summary?date=${encodeURIComponent(selectedDateValue())}`;
       const state = { pin: '', timer: null, lastBillId: null };
       let deferredInstallPrompt = null;
       const $ = (id) => document.getElementById(id);
