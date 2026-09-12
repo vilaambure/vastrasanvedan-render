@@ -281,6 +281,9 @@
       }
 
       .scan-strip {
+        position: sticky;
+        top: 12px;
+        z-index: 20;
         display: grid;
         grid-template-columns: 1fr auto;
         gap: 12px;
@@ -289,6 +292,7 @@
         border: 1px solid #cdd9ff;
         border-radius: 18px;
         background: linear-gradient(135deg, #f1f5ff, #ffffff);
+        box-shadow: 0 14px 30px rgba(31, 58, 199, 0.12);
       }
 
       .scan-strip .field { min-width: 0; }
@@ -867,6 +871,7 @@
       @media (max-width: 720px) {
         .shop-banner-content { flex-direction: column; align-items: flex-start; }
         .customer-grid, .product-form { grid-template-columns: 1fr; }
+        .scan-strip { grid-template-columns: 1fr; top: 6px; }
         .panel, .analytics-panel, .mini-panel { padding: 16px; }
         .reset-archive-btn { width: 100%; }
       }
@@ -906,17 +911,6 @@
           </div>
           <p class="pos-kicker">Scan a product, verify its details, set quantity, and add it to the live bill.</p>
 
-          <div class="customer-grid">
-            <div class="field">
-              <label for="customerName">Customer Name</label>
-              <input id="customerName" type="text" placeholder="e.g. Rohan Sharma" />
-            </div>
-            <div class="field">
-              <label for="phoneNumber">Phone Number</label>
-              <input id="phoneNumber" type="tel" placeholder="e.g. 9876543210" />
-            </div>
-          </div>
-
           <div class="scan-strip" style="margin-top: 18px;">
             <div class="field">
               <label for="barcodeInput">Scan Barcode</label>
@@ -927,6 +921,17 @@
               <p class="scan-help">USB scanner: scan + Enter. Mobile: use Camera Scan.</p>
             </div>
             <button id="scanBarcodeBtn" class="btn btn-success" type="button">Find Product</button>
+          </div>
+
+          <div class="customer-grid">
+            <div class="field">
+              <label for="customerName">Customer Name</label>
+              <input id="customerName" type="text" placeholder="e.g. Rohan Sharma" />
+            </div>
+            <div class="field">
+              <label for="phoneNumber">Phone Number</label>
+              <input id="phoneNumber" type="tel" placeholder="e.g. 9876543210" />
+            </div>
           </div>
 
           <div id="productDetailCard" class="product-detail-card empty">
@@ -1215,6 +1220,7 @@
       let cameraStream = null;
       let cameraScanActive = false;
       let cameraControls = null;
+      let barcodeScanInProgress = false;
       let receiptSettings = {
         storeName: 'Vastra Sanvedan',
         receiptHeaderText: 'Retail Billing Receipt',
@@ -1298,6 +1304,10 @@
 
       function fmtMoney(value) {
         return `₹${Number(value || 0).toLocaleString('en-IN')}`;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
       }
 
       function escapeReceiptText(value) {
@@ -1550,11 +1560,11 @@
         }
         elements.productDetailCard.className = 'product-detail-card';
         elements.productDetailText.innerHTML = `
-          <h4 class="product-detail-title">${product.name}</h4>
+          <h4 class="product-detail-title">${escapeHtml(product.name)}</h4>
           <div class="product-detail-meta">
-            <span>Barcode: <strong>${product.barcode || 'Not assigned'}</strong></span>
-            <span>Category: <strong>${product.category || 'General'}</strong></span>
-            <span>Brand: <strong>${product.brand || 'Unbranded'}</strong></span>
+            <span>Barcode: <strong>${escapeHtml(product.barcode || 'Not assigned')}</strong></span>
+            <span>Category: <strong>${escapeHtml(product.category || 'General')}</strong></span>
+            <span>Brand: <strong>${escapeHtml(product.brand || 'Unbranded')}</strong></span>
             <span>Stock: <strong>${Number(product.stock || 0)}</strong></span>
             <span>Status: <strong>${product.active ? 'Active' : 'Offline only'}</strong></span>
           </div>`;
@@ -1632,11 +1642,12 @@
       function renderProductSearchResults(products) {
         elements.productSearchResults.innerHTML = products.length ? products.map((product) => `
           <button type="button" class="product-search-result" data-product-id="${product._id}">
-            <strong>${product.name}</strong><span>${product.active ? 'Online' : 'Offline only'} · ${fmtMoney(product.sellingPrice)} · Stock ${product.stock}</span>
+            <strong>${escapeHtml(product.name)}</strong><span>${product.active ? 'Online' : 'Offline only'} · ${fmtMoney(product.sellingPrice)} · Stock ${Number(product.stock || 0)}</span>
           </button>`).join('') : '<p class="product-search-empty">No products found.</p>';
         elements.productSearchResults.hidden = false;
         elements.productSearchResults.querySelectorAll('[data-product-id]').forEach((button) => button.addEventListener('click', () => {
           const product = products.find((item) => item._id === button.dataset.productId);
+          if (!product) return setToast('Product is no longer available. Search again.', 'error');
           selectProduct(product);
           elements.productSearchInput.value = product.name;
           elements.productSearchResults.hidden = true;
@@ -1652,21 +1663,24 @@
         }
         try {
           const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`, { cache: 'no-store', credentials: 'same-origin' });
-          const result = await response.json();
+          const result = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(result.message || 'Product search failed');
           renderProductSearchResults(result.products || []);
         } catch (error) { setToast(error.message, 'error'); }
       }
 
       async function scanBarcode() {
+        if (barcodeScanInProgress) return;
         const barcode = elements.barcodeInput.value.trim();
         if (!barcode) return;
+        barcodeScanInProgress = true;
+        elements.scanBarcodeBtn.disabled = true;
         try {
           const response = await fetch(`/api/products/search?barcode=${encodeURIComponent(barcode)}`, { cache: 'no-store', credentials: 'same-origin' });
-          const result = await response.json();
+          const result = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(result.message || 'Product not found');
           const product = result.product;
-          selectedProduct = product;
+          if (!product || !product._id) throw new Error('Product not found for this barcode.');
           selectProduct(product);
           if (Number(product.stock || 0) < 1) throw new Error('This product is out of stock.');
           const size = Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : elements.sizeSelect.value;
@@ -1683,7 +1697,10 @@
           announceBarcodeScan(product.name);
           elements.barcodeInput.focus();
         } catch (error) {
-          setToast(error.message, 'error');
+          setToast(error.message || 'Barcode scan failed. Try again.', 'error');
+        } finally {
+          barcodeScanInProgress = false;
+          elements.scanBarcodeBtn.disabled = false;
         }
       }
 
@@ -1899,9 +1916,9 @@
         const receiptFooter = escapeReceiptText(receiptSettings.receiptFooterText || 'Thank you for shopping with us.\nVisit again soon.').replace(/\n/g, '<br>');
         const list = (invoiceData.items || []).map((item) => `
           <tr>
-            <td style="padding:5px 0; text-align:left;">${item.productName}</td>
-            <td style="padding:5px 0; text-align:left;">${item.size}</td>
-            <td style="padding:5px 0; text-align:right;">${item.quantity}</td>
+            <td style="padding:5px 0; text-align:left;">${escapeReceiptText(item.productName)}</td>
+            <td style="padding:5px 0; text-align:left;">${escapeReceiptText(item.size)}</td>
+            <td style="padding:5px 0; text-align:right;">${Number(item.quantity || 0)}</td>
             <td style="padding:5px 0; text-align:right;">${fmtMoney(item.totalAmount)}</td>
           </tr>
         `).join('');
@@ -1914,10 +1931,10 @@
             </div>
 
             <div style="margin-bottom:10px;">
-              <div><strong>Bill:</strong> ${invoiceData.invoiceNumber}</div>
-              <div><strong>Customer:</strong> ${invoiceData.customerName || 'Walk-in Customer'}</div>
-              <div><strong>Phone:</strong> ${invoiceData.phoneNumber || 'N/A'}</div>
-              <div><strong>Mode:</strong> ${invoiceData.paymentMode}</div>
+              <div><strong>Bill:</strong> ${escapeReceiptText(invoiceData.invoiceNumber)}</div>
+              <div><strong>Customer:</strong> ${escapeReceiptText(invoiceData.customerName || 'Walk-in Customer')}</div>
+              <div><strong>Phone:</strong> ${escapeReceiptText(invoiceData.phoneNumber || 'N/A')}</div>
+              <div><strong>Mode:</strong> ${escapeReceiptText(invoiceData.paymentMode)}</div>
             </div>
 
             <table style="width:100%; border-collapse:collapse; font-size:10px;">
