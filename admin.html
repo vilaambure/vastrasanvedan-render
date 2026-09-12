@@ -52,6 +52,17 @@
     <div id="view"></div>
   </section>
 </main>
+<script>
+  window.addEventListener('pagehide', () => {
+    navigator.sendBeacon('/api/admin/logout');
+  });
+
+  window.addEventListener('pageshow', async (event) => {
+    if (!event.persisted) return;
+    const response = await fetch('/api/admin/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!response.ok) window.location.replace('/admin/login');
+  });
+</script>
 <script src="/admin-app.js?v=barcode-studio-2"></script>
 </body>
 </html>
