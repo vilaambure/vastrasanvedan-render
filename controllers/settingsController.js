@@ -44,6 +44,7 @@ async function saveSettings(req, res) {
       upiId,
     };
     if (upiQrImage) update.upiQrImage = upiQrImage;
+    if (typeof req.body?.whatsappMessage === "string") update.whatsappMessage = req.body.whatsappMessage.trim() || "Hello Vastra Sanvedan,\nI want to order:\n{productLines}\n\nTotal: {total}{customerInfo}\n\nPlease confirm availability and delivery details.";
     if (typeof req.body?.autoConfirmVerifiedPayments === "boolean") update.autoConfirmVerifiedPayments = req.body.autoConfirmVerifiedPayments;
     if (typeof req.body?.paymentProvider === "string") update.paymentProvider = req.body.paymentProvider.trim() || "manual";
     if (typeof req.body?.paymentGatewayMerchantId === "string") update.paymentGatewayMerchantId = req.body.paymentGatewayMerchantId.trim();

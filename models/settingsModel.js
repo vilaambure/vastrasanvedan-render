@@ -20,6 +20,7 @@ const settingsSchema = new mongoose.Schema(
     fontFamily: { type: String, default: "Cinzel", trim: true },
     announcementText: { type: String, default: "Vastra Sanvedan — one collection, online and in-store", trim: true },
     contactPhone: { type: String, default: "+91 99999 99999", trim: true },
+    whatsappMessage: { type: String, default: "Hello Vastra Sanvedan,\nI want to order:\n{productLines}\n\nTotal: {total}{customerInfo}\n\nPlease confirm availability and delivery details.", trim: true },
     contactEmail: { type: String, default: "hello@vastrasanvedan.com", trim: true },
     footerText: { type: String, default: "Curated wardrobe from the atelier.", trim: true },
     receiptHeaderText: { type: String, default: "Retail Billing Receipt", trim: true },

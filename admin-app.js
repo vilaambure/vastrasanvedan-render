@@ -322,7 +322,8 @@ function settingsView() {
         <label class="field"><span>Store name</span><input name="storeName" value="${String(s.storeName || "").replace(/"/g, "&quot;")}"></label>
         <label class="field"><span>Tagline</span><input name="tagline" value="${String(s.tagline || "").replace(/"/g, "&quot;")}"></label>
         <label class="field full"><span>Announcement text</span><input name="announcementText" value="${String(s.announcementText || "").replace(/"/g, "&quot;")}"></label>
-        <label class="field"><span>WhatsApp Business number</span><input name="contactPhone" placeholder="+91 98765 43210" value="${String(s.contactPhone || "").replace(/"/g, "&quot;")}"><small>Orders from the storefront open this number directly in WhatsApp.</small></label>
+        <label class="field"><span>WhatsApp Business number</span><input name="contactPhone" placeholder="+91 98765 43210" value="${String(s.contactPhone || "").replace(/"/g, "&quot;")}"><small>Direct customer order flow opens this number in WhatsApp.</small></label>
+        <label class="field full"><span>WhatsApp message template</span><textarea name="whatsappMessage" rows="6" placeholder="Hello Vastra Sanvedan,\nI want to order:\n{productLines}\n\nTotal: {total}{customerInfo}\n\nPlease confirm availability and delivery details.">${String(s.whatsappMessage || "Hello Vastra Sanvedan,\nI want to order:\n{productLines}\n\nTotal: {total}{customerInfo}\n\nPlease confirm availability and delivery details.").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</textarea><small>Use {productLines}, {total}, and {customerInfo} placeholders. Customers will open this message directly in WhatsApp.</small></label>
         <label class="field"><span>Contact email</span><input name="contactEmail" value="${String(s.contactEmail || "").replace(/"/g, "&quot;")}"></label>
         <label class="field full"><span>Footer text</span><input name="footerText" value="${String(s.footerText || "").replace(/"/g, "&quot;")}"></label>
         <label class="field full"><span>Printed bill heading</span><textarea name="receiptHeaderText" rows="3" placeholder="Retail Billing Receipt">${String(s.receiptHeaderText || "").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</textarea><small>Shown below the store name on every POS bill. Use a new line for multiple lines.</small></label>
@@ -389,8 +390,8 @@ function bannersView() {
 
 function render() {
   const view = {
-    dashboard, studio, banners: bannersView, categories: () => catalogForm("categories"), brands: () => catalogForm("brands"),
-    products: productsView, barcodeStudio, inventory: inventoryView, orders: ordersView, customers: customersView, payments: paymentsView,
+    dashboard, whatsapp: settingsView, studio, banners: bannersView, categories: () => catalogForm("categories"), brands: () => catalogForm("brands"),
+    products: productsView, barcodeStudio, inventory: inventoryView, orders: ordersView,
     analytics: dashboard, pages: pagesView, settings: settingsView,
   }[tab];
   $("#view").innerHTML = view();
@@ -600,6 +601,7 @@ function bindView() {
       tagline: form.tagline.value.trim(),
       announcementText: form.announcementText.value.trim(),
       contactPhone: form.contactPhone.value.trim(),
+      whatsappMessage: form.whatsappMessage.value.trim() || "Hello Vastra Sanvedan,\nI want to order:\n{productLines}\n\nTotal: {total}{customerInfo}\n\nPlease confirm availability and delivery details.",
       contactEmail: form.contactEmail.value.trim(),
       footerText: form.footerText.value.trim(),
       receiptHeaderText: form.receiptHeaderText.value.trim(),

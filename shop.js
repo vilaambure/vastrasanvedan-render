@@ -127,7 +127,12 @@ function buildWhatsAppUrl(items = [], total = 0, customer = {}) {
   if (!phone) return "";
   const productLines = items.map((item) => `${item.name} • ${item.size || "One size"} • ${item.color || "Signature"} • ${item.qty} × ${money(item.price || 0)}`).join("\n");
   const customerInfo = customer.name || customer.phone || customer.address ? `\nCustomer: ${customer.name || ""}${customer.phone ? `\nPhone: ${customer.phone}` : ""}${customer.address ? `\nAddress: ${customer.address}${customer.city ? `, ${customer.city}` : ""}${customer.pincode ? `, ${customer.pincode}` : ""}` : ""}` : "";
-  const message = encodeURIComponent(`Hello Vastra Sanvedan,\nI want to order:\n${productLines}\n\nTotal: ${money(total)}${customerInfo}\n\nPlease confirm availability and delivery details.`);
+  const template = state.settings?.whatsappMessage || "Hello Vastra Sanvedan,\nI want to order:\n{productLines}\n\nTotal: {total}{customerInfo}\n\nPlease confirm availability and delivery details.";
+  const messageText = template
+    .replace("{productLines}", productLines)
+    .replace("{total}", money(total))
+    .replace("{customerInfo}", customerInfo);
+  const message = encodeURIComponent(messageText);
   return `https://wa.me/${phone}?text=${message}`;
 }
 
