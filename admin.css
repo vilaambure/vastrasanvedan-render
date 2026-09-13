@@ -477,47 +477,54 @@ img, video { max-width: 100%; display: block; }
 
 .barcode-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.85fr);
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
   gap: 22px;
   align-items: stretch;
 }
 
 .barcode-controls {
-  padding: 18px;
-  border: 1px solid var(--line, #dfe5ee);
-  border-radius: 16px;
-  background: #fbfcff;
+  padding: 20px;
+  border: 1px solid rgba(193, 156, 110, 0.38);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(249, 242, 233, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
 }
 
 .barcode-preview-card {
   display: flex;
-  min-height: 380px;
+  min-height: 420px;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 16px;
   padding: 28px 24px;
-  border: 1px solid #e7d6ad;
-  border-radius: 16px;
-  background: linear-gradient(145deg, #fffdf7, #f8f1df);
+  border: 1px solid rgba(143, 110, 70, 0.28);
+  border-radius: 22px;
+  background: linear-gradient(140deg, #1f1c1a 0%, #3c3029 35%, #d7b078 150%);
+  color: #fff9f3;
   text-align: center;
+  box-shadow: 0 22px 48px rgba(31, 28, 26, 0.18);
 }
 
 .preview-label { display: grid; gap: 4px; }
-.preview-label span, .preview-code { color: var(--muted, #667085); font-size: 0.82rem; }
+.preview-label strong { font-size: 1.1rem; }
+.preview-label span, .preview-code { color: rgba(255, 249, 243, 0.8); font-size: 0.82rem; }
 .barcode-preview-card svg {
-  width: min(100%, 420px);
+  width: min(100%, 440px);
   max-width: 100%;
   height: auto;
   display: block;
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(243,235,225,0.95));
+  border-radius: 14px;
+  padding: 10px 8px;
 }
 .barcode-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .barcode-actions button { width: auto; }
 .barcode-product-panel { margin-top: 24px; }
 .barcode-product-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
-.barcode-product-card { display: grid; width: 100%; gap: 8px; padding: 14px 16px; border: 1px solid #dfe5ee; border-radius: 12px; background: #fff; color: var(--ink, #1a2433); text-align: left; cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
-.barcode-product-card:hover { border-color: #b7c7ea; transform: translateY(-1px); }
-.barcode-product-card.is-selected { border-color: #2f7af7; box-shadow: 0 0 0 3px rgba(47, 122, 247, 0.12); }
+.barcode-product-card { display: grid; width: 100%; gap: 8px; padding: 14px 16px; border: 1px solid rgba(154, 127, 97, 0.35); border-radius: 14px; background: linear-gradient(180deg, #fffdfb, #f6efe8); color: var(--ink, #1a2433); text-align: left; cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+.barcode-product-card:hover { border-color: rgba(104, 75, 47, 0.5); transform: translateY(-1px); }
+.barcode-product-card.is-selected { border-color: #d3a15f; box-shadow: 0 0 0 3px rgba(211, 161, 95, 0.18); }
 .barcode-product-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
 .barcode-product-top strong { display: block; font-size: 0.98rem; }
 .barcode-product-card small { color: var(--muted, #667085); }
@@ -526,28 +533,56 @@ img, video { max-width: 100%; display: block; }
 .barcode-status.assigned { background: #eaf8ef; color: #166534; }
 .barcode-status.pending { background: #fff3d6; color: #8a5b00; }
 .product-barcode-box {
-  display: inline-block;
-  max-width: 210px;
-  padding: 6px 9px;
-  border: 1px solid #dfe5ee;
-  border-radius: 8px;
-  background: #f8fbff;
-  color: #111827;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+  max-width: 180px;
+  padding: 7px 10px;
+  border: 1px solid rgba(42, 64, 89, 0.18);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f7fafc 0%, #edf4fb 100%);
+  color: #1a2433;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 0.73rem;
-  line-height: 1.4;
-  letter-spacing: 0.04em;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
   word-break: break-all;
   white-space: normal;
+  text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
 }
 .product-barcode-empty {
-  display: inline-block;
-  padding: 6px 9px;
-  border: 1px dashed #d1d9e6;
-  border-radius: 8px;
-  background: #f9fafb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  padding: 7px 10px;
+  border: 1px dashed rgba(94, 113, 135, 0.4);
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.05);
   color: var(--muted, #667085);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
+  text-align: center;
+}
+.barcode-empty,
+.barcode-unavailable {
+  display: grid;
+  place-items: center;
+  width: min(100%, 420px);
+  min-height: 150px;
+  padding: 18px 14px;
+  border: 1px dashed rgba(255,255,255,0.45);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,249,243,0.85);
+  text-align: center;
+  gap: 8px;
+}
+.barcode-unavailable strong {
+  color: #fff;
+  font-size: 1rem;
+  word-break: break-all;
 }
 .empty-state { border: 1px dashed #dfe5ee; border-radius: 12px; padding: 18px; text-align: center; color: var(--muted, #667085); background: #fafbff; }
 .table td small { display: block; color: var(--muted, #667085); margin-top: 4px; }
