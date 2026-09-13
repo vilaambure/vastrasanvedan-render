@@ -711,11 +711,11 @@ function bindBarcodeStudio() {
 
   const selectedProduct = () => (cache.products || []).find((product) => product._id === productSelect.value);
 
-  const clearStudioPreview = () => {
+  const clearStudioPreview = (message = "Ready for barcode generation") => {
     currentCode = "";
     if (preview) preview.innerHTML = "";
     if (codeValue) codeValue.textContent = "No barcode generated";
-    if (previewMeta) previewMeta.textContent = "Ready for barcode generation";
+    if (previewMeta) previewMeta.textContent = message;
   };
 
   const renderBarcodePreview = (value) => {
@@ -777,28 +777,35 @@ function bindBarcodeStudio() {
     currentCode = nextCode;
   };
 
-  productSelect.addEventListener("change", () => {
+  const syncProductBarcodePreview = () => {
     const product = selectedProduct();
     if (!product) {
       previewName.textContent = "Select a product";
-      previewMeta.textContent = "Ready for barcode generation";
-      clearStudioPreview();
+      clearStudioPreview("Ready for barcode generation");
       return;
     }
 
     previewName.textContent = product.name;
     form.manual.value = "";
 
-    if (product.barcode) {
-      currentCode = product.barcode;
-      previewMeta.textContent = `${product.category || "General"} · ${currentCode.length === 13 && /^\d+$/.test(currentCode) ? "EAN-13" : "Code 128"}`;
+    const existing = String(product.barcode || "").trim();
+    if (existing) {
+      currentCode = existing;
+      previewMeta.textContent = `${product.category || "General"} · ${getBarcodeFormat(existing) === "ean13" ? "EAN-13" : "Code 128"}`;
       renderBarcodePreview(currentCode);
-    } else {
-      currentCode = "";
-      previewMeta.textContent = "No barcode assigned yet";
-      clearStudioPreview();
+      return;
     }
-  });
+
+    currentCode = "";
+    previewMeta.textContent = "No barcode assigned yet";
+    clearStudioPreview("No barcode assigned yet");
+  };
+
+  productSelect.addEventListener("change", syncProductBarcodePreview);
+
+  if (productSelect.value) {
+    syncProductBarcodePreview();
+  }
 
   $("#generateBarcodeBtn").onclick = async () => {
     form.manual.value = "";
