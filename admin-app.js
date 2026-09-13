@@ -210,7 +210,8 @@ function catalogForm(kind) {
 function productsView() {
   const formatBarcode = (value) => {
     const text = String(value ?? "").trim();
-    return text || "Not assigned";
+    if (!text) return '<span class="product-barcode-empty">No barcode</span>';
+    return `<span class="product-barcode-box">${text}</span>`;
   };
   return `<div class="panel"><h2>Products</h2>
     <form class="form" id="productForm">
@@ -663,6 +664,13 @@ function bindBarcodeStudio() {
     document.head.appendChild(script);
   });
 
+  const clearBarcodePreview = () => {
+    currentCode = "";
+    if (preview) preview.innerHTML = "";
+    if (codeValue) codeValue.textContent = "No barcode generated";
+    if (previewMeta) previewMeta.textContent = "Ready for barcode generation";
+  };
+
   const renderBarcodeFallback = (value, label) => {
     if (!preview || !value) {
       preview.innerHTML = "";
@@ -673,30 +681,39 @@ function bindBarcodeStudio() {
       preview.innerHTML = "";
       return;
     }
-    const width = 320;
-    const height = 110;
-    const barHeight = 64;
-    const margin = 8;
-    const totalBars = Math.max(safeText.length * 2 + 12, 24);
-    let x = margin;
-    let bars = [];
-
-    for (let i = 0; i < safeText.length; i += 1) {
-      const char = safeText.charAt(i);
-      const widthFactor = 2 + ((char.charCodeAt(0) + i) % 5);
-      const dark = i % 2 === 0;
-      const barWidth = Math.max(2, widthFactor);
-      bars.push(`<rect x="${x}" y="${15}" width="${barWidth}" height="${barHeight}" fill="${dark ? "#111827" : "#ffffff"}" />`);
-      x += barWidth + 1;
-    }
-
-    const leftGuard = 4;
-    const rightGuard = 4;
-    const totalWidth = Math.max(x + leftGuard + rightGuard, 80);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.min(width, totalWidth)}" height="${height}" viewBox="0 0 ${totalWidth} ${height}" preserveAspectRatio="xMidYMid meet">
-      <rect width="${totalWidth}" height="${height}" fill="#ffffff" rx="8"/>
-      ${bars.join("")}
-      <text x="${totalWidth / 2}" y="${barHeight + 32}" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#1f2937">${label || safeText}</text>
+    const width = 420;
+    const height = 150;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
+      <rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff" rx="12" stroke="#d0d7e2" stroke-width="2"/>
+      <rect x="18" y="22" width="${width - 36}" height="72" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
+      <g fill="#0f172a">
+        <rect x="34" y="28" width="4" height="60"/>
+        <rect x="46" y="28" width="8" height="60"/>
+        <rect x="62" y="28" width="2" height="60"/>
+        <rect x="72" y="28" width="8" height="60"/>
+        <rect x="88" y="28" width="4" height="60"/>
+        <rect x="100" y="28" width="12" height="60"/>
+        <rect x="122" y="28" width="3" height="60"/>
+        <rect x="134" y="28" width="7" height="60"/>
+        <rect x="150" y="28" width="5" height="60"/>
+        <rect x="166" y="28" width="10" height="60"/>
+        <rect x="184" y="28" width="2" height="60"/>
+        <rect x="194" y="28" width="9" height="60"/>
+        <rect x="212" y="28" width="4" height="60"/>
+        <rect x="224" y="28" width="6" height="60"/>
+        <rect x="240" y="28" width="12" height="60"/>
+        <rect x="260" y="28" width="3" height="60"/>
+        <rect x="272" y="28" width="8" height="60"/>
+        <rect x="288" y="28" width="5" height="60"/>
+        <rect x="302" y="28" width="11" height="60"/>
+        <rect x="321" y="28" width="3" height="60"/>
+        <rect x="334" y="28" width="8" height="60"/>
+        <rect x="350" y="28" width="2" height="60"/>
+        <rect x="362" y="28" width="10" height="60"/>
+        <rect x="380" y="28" width="5" height="60"/>
+      </g>
+      <text x="${width / 2}" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#111827">${label || safeText}</text>
+      <text x="${width / 2}" y="136" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#475569">Barcode preview unavailable</text>
     </svg>`;
     preview.innerHTML = svg;
   };
@@ -745,6 +762,7 @@ function bindBarcodeStudio() {
     const format = form.format.value;
     const product = selectedProduct();
     const manual = form.manual.value.trim();
+    if (!product) return clearBarcodePreview();
     if (manual) currentCode = format === "EAN13" ? ean13(manual) : manual;
     else if (format === "EAN13") currentCode = ean13(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
     else currentCode = `${form.prefix.value.trim().toUpperCase() || "VS"}${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 10)}`;
@@ -752,6 +770,8 @@ function bindBarcodeStudio() {
       previewName.textContent = product.name;
       previewMeta.textContent = `${product.category || "General"} · ${format === "EAN13" ? "EAN-13" : "Code 128"}`;
     }
+    if (!currentCode) return clearBarcodePreview();
+    preview.innerHTML = "";
     codeValue.textContent = currentCode;
     if (window.JsBarcode) {
       JsBarcode(preview, currentCode, { format: format === "EAN13" ? "ean13" : "CODE128", lineColor: "#152238", width: 2, height: 74, displayValue: true, fontSize: 15, margin: 12 });
@@ -766,6 +786,7 @@ function bindBarcodeStudio() {
       previewMeta.textContent = "Ready for barcode generation";
       codeValue.textContent = "No barcode generated";
       currentCode = "";
+      preview.innerHTML = "";
       syncSelectedProductState();
       return;
     }
@@ -777,8 +798,14 @@ function bindBarcodeStudio() {
       form.manual.value = currentCode;
       previewMeta.textContent = `${product.category || "General"} · ${currentCode.length === 13 && /^\d+$/.test(currentCode) ? "EAN-13" : "Code 128"}`;
     } else {
-      generateCode();
+      currentCode = "";
+      codeValue.textContent = "No barcode generated";
+      previewMeta.textContent = "No barcode assigned yet";
+      preview.innerHTML = "";
+      syncSelectedProductState();
+      return;
     }
+    preview.innerHTML = "";
     if (currentCode && window.JsBarcode) {
       JsBarcode(preview, currentCode, { format: currentCode.length === 13 && /^\d+$/.test(currentCode) ? "ean13" : "CODE128", lineColor: "#152238", width: 2, height: 74, displayValue: true, fontSize: 15, margin: 12 });
     } else if (currentCode) {

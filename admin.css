@@ -491,12 +491,12 @@ img, video { max-width: 100%; display: block; }
 
 .barcode-preview-card {
   display: flex;
-  min-height: 250px;
+  min-height: 380px;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 12px;
-  padding: 22px;
+  gap: 16px;
+  padding: 28px 24px;
   border: 1px solid #e7d6ad;
   border-radius: 16px;
   background: linear-gradient(145deg, #fffdf7, #f8f1df);
@@ -505,7 +505,12 @@ img, video { max-width: 100%; display: block; }
 
 .preview-label { display: grid; gap: 4px; }
 .preview-label span, .preview-code { color: var(--muted, #667085); font-size: 0.82rem; }
-.barcode-preview-card svg { max-width: 100%; height: auto; }
+.barcode-preview-card svg {
+  width: min(100%, 420px);
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
 .barcode-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .barcode-actions button { width: auto; }
 .barcode-product-panel { margin-top: 24px; }
@@ -520,6 +525,30 @@ img, video { max-width: 100%; display: block; }
 .barcode-status { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 999px; font-size: 10px; letter-spacing: .05em; text-transform: uppercase; font-weight: 700; }
 .barcode-status.assigned { background: #eaf8ef; color: #166534; }
 .barcode-status.pending { background: #fff3d6; color: #8a5b00; }
+.product-barcode-box {
+  display: inline-block;
+  max-width: 210px;
+  padding: 6px 9px;
+  border: 1px solid #dfe5ee;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #111827;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.73rem;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  word-break: break-all;
+  white-space: normal;
+}
+.product-barcode-empty {
+  display: inline-block;
+  padding: 6px 9px;
+  border: 1px dashed #d1d9e6;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: var(--muted, #667085);
+  font-size: 0.72rem;
+}
 .empty-state { border: 1px dashed #dfe5ee; border-radius: 12px; padding: 18px; text-align: center; color: var(--muted, #667085); background: #fafbff; }
 .table td small { display: block; color: var(--muted, #667085); margin-top: 4px; }
 
