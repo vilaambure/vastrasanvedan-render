@@ -39,16 +39,33 @@ app.use((req, res, next) => {
   if (blocked) return res.status(404).end();
   next();
 });
+app.get(["/admin.html", "/admin-login.html", "/admin.css", "/admin-app.js", "/admin-products.js", "/admin-settings.js", "/admin-studio.js"], (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.sendFile(path.join(__dirname, req.path.replace(/^\//, "")));
+});
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(express.static(__dirname, { index: false }));
 
-app.get("/admin/login", (_req, res) => res.sendFile(__dirname + "/admin-login.html"));
+app.get("/admin/login", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.sendFile(__dirname + "/admin-login.html");
+});
 app.get("/admin", (req, res) => {
   if (!hasValidAdminSession(req)) return res.redirect("/admin/login");
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   res.sendFile(__dirname + "/admin.html");
 });
 app.get("/admin/pos", (req, res) => {
   if (!hasValidAdminSession(req)) return res.redirect("/admin/login");
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   res.sendFile(__dirname + "/index.html");
 });
 
