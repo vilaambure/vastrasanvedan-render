@@ -477,29 +477,37 @@ img, video { max-width: 100%; display: block; }
 
 .barcode-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
-  gap: 22px;
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 1.3fr);
+  gap: 28px;
+  align-items: center;
+  width: min(100%, 1200px);
+  margin: 16px auto 0;
 }
 
 .barcode-controls {
-  padding: 20px;
+  padding: 22px;
   border: 1px solid rgba(193, 156, 110, 0.38);
-  border-radius: 20px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(249, 242, 233, 0.92));
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.97), rgba(249, 242, 233, 0.94));
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
+  min-height: 390px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .barcode-preview-card {
   display: flex;
-  min-height: 420px;
+  min-height: 500px;
+  width: min(100%, 760px);
+  margin: 18px auto 0;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 16px;
-  padding: 28px 24px;
+  padding: 34px 26px;
   border: 1px solid rgba(143, 110, 70, 0.28);
-  border-radius: 22px;
+  border-radius: 28px;
   background: linear-gradient(140deg, #1f1c1a 0%, #3c3029 35%, #d7b078 150%);
   color: #fff9f3;
   text-align: center;
@@ -510,13 +518,14 @@ img, video { max-width: 100%; display: block; }
 .preview-label strong { font-size: 1.1rem; }
 .preview-label span, .preview-code { color: rgba(255, 249, 243, 0.8); font-size: 0.82rem; }
 .barcode-preview-card svg {
-  width: min(100%, 440px);
+  width: min(100%, 560px);
   max-width: 100%;
   height: auto;
   display: block;
   background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(243,235,225,0.95));
-  border-radius: 14px;
-  padding: 10px 8px;
+  border-radius: 16px;
+  padding: 12px 10px;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.12);
 }
 .barcode-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .barcode-actions button { width: auto; }
@@ -597,7 +606,8 @@ img, video { max-width: 100%; display: block; }
 .table td small { display: block; color: var(--muted, #667085); margin-top: 4px; }
 
 @media (max-width: 860px) {
-  .barcode-layout { grid-template-columns: 1fr; }
+  .barcode-layout { grid-template-columns: 1fr; width: 100%; }
+  .barcode-preview-card { min-height: 420px; width: 100%; }
 }
 
 .check-list {
