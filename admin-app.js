@@ -1,6 +1,7 @@
 const $ = (s) => document.querySelector(s);
 const money = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 const escapeHtml = (value) => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
+const BARCODE_LIBRARY_URL = "https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js";
 const SECTION_TYPES = ["HERO", "CATEGORIES", "BRANDS", "LOWEST_PRICE", "PRODUCT_CAROUSEL", "PRODUCT_GRID", "FULL_WIDTH_BANNER", "VIDEO", "COLLECTION", "LOOKBOOK", "EDITORIAL", "PROMO_STRIP", "NEW_ARRIVALS", "TRENDING", "FEATURED"];
 const GROUPS = ["MEN", "WOMEN", "KIDS", "HOME", "OTHER"];
 const STATUSES = ["PLACED", "CONFIRMED", "PACKING", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"];
@@ -389,6 +390,40 @@ function bannersView() {
   </div>`;
 }
 
+function getBarcodeFormat(value) {
+  const normalized = String(value || "").trim();
+  return normalized.length === 13 && /^\d+$/.test(normalized) ? "ean13" : "CODE128";
+}
+
+function renderBarcodeSvg(target, value, { displayValue = true, width = 1.8, height = 54, fontSize = 11, compact = false } = {}) {
+  const normalized = String(value || "").trim();
+  if (!target || !normalized) return false;
+
+  target.innerHTML = "";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", compact ? "0 0 180 56" : "0 0 280 90");
+  svg.setAttribute("aria-label", `Barcode ${normalized}`);
+  svg.setAttribute("role", "img");
+  target.appendChild(svg);
+
+  try {
+    JsBarcode(svg, normalized, {
+      format: getBarcodeFormat(normalized),
+      displayValue,
+      fontSize,
+      width,
+      height,
+      margin: compact ? 6 : 12,
+      background: "#ffffff",
+      lineColor: "#1a2433",
+    });
+    return true;
+  } catch (error) {
+    target.innerHTML = `<span class="barcode-fallback">${escapeHtml(normalized)}</span>`;
+    return false;
+  }
+}
+
 function renderProductBarcodePreviews() {
   const boxes = document.querySelectorAll(".product-barcode-box[data-code]");
   if (!boxes.length) return;
@@ -405,26 +440,7 @@ function renderProductBarcodePreviews() {
       return;
     }
 
-    box.innerHTML = "";
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("viewBox", "0 0 180 56");
-    svg.setAttribute("aria-label", `Barcode ${value}`);
-    box.appendChild(svg);
-
-    try {
-      JsBarcode(svg, value, {
-        format: value.length === 13 && /^\d+$/.test(value) ? "ean13" : "CODE128",
-        displayValue: true,
-        fontSize: 10,
-        width: 1.4,
-        height: 36,
-        margin: 8,
-        background: "#fff",
-        lineColor: "#1a2433",
-      });
-    } catch (error) {
-      box.innerHTML = `<span class="barcode-fallback">${escapeHtml(value)}</span>`;
-    }
+    renderBarcodeSvg(box, value, { compact: true, width: 1.2, height: 36, fontSize: 9, displayValue: true });
   });
 }
 
@@ -714,16 +730,7 @@ function bindBarcodeStudio() {
     if (codeValue) codeValue.textContent = currentCode;
 
     if (window.JsBarcode) {
-      preview.innerHTML = "";
-      JsBarcode(preview, currentCode, {
-        format: currentCode.length === 13 && /^\d+$/.test(currentCode) ? "ean13" : "CODE128",
-        lineColor: "#152238",
-        width: 2,
-        height: 74,
-        displayValue: true,
-        fontSize: 15,
-        margin: 12,
-      });
+      renderBarcodeSvg(preview, currentCode, { width: 2, height: 74, fontSize: 15, displayValue: true, compact: false });
       return;
     }
 
@@ -733,7 +740,7 @@ function bindBarcodeStudio() {
   const loadBarcodeLibrary = () => new Promise((resolve) => {
     if (window.JsBarcode) return resolve(true);
     const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js";
+    script.src = BARCODE_LIBRARY_URL;
     script.onload = () => resolve(true);
     script.onerror = () => {
       window.JsBarcode = null;
