@@ -46,6 +46,13 @@ app.get(["/admin.html", "/admin-login.html", "/admin.css", "/admin-app.js", "/ad
   res.sendFile(path.join(__dirname, req.path.replace(/^\//, "")));
 });
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.get("/vendor/jsbarcode.min.js", (_req, res) => {
+  const filePath = path.join(__dirname, "node_modules", "jsbarcode", "dist", "JsBarcode.all.min.js");
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.sendFile(filePath);
+});
 app.use(express.static(__dirname, { index: false }));
 
 app.get("/admin/login", (_req, res) => {

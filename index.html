@@ -779,31 +779,9 @@
 
       .camera-header h3 { margin: 0; }
 
-      .camera-header-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .flash-btn {
-        width: 42px;
-        height: 42px;
-        border-radius: 50%;
-        border: 1px solid var(--line);
-        background: #f3f7ff;
-        cursor: pointer;
-        font-size: 1rem;
-      }
-
-      .flash-btn.active {
-        background: #ffeb8a;
-        border-color: #f5bf2d;
-      }
-
       .camera-preview {
         display: block;
         width: 100%;
-        max-height: min(60vh, 420px);
         aspect-ratio: 4 / 3;
         object-fit: cover;
         background: #101827;
@@ -1201,10 +1179,7 @@
       <div class="camera-card">
         <div class="camera-header">
           <h3 id="cameraTitle">Scan Barcode</h3>
-          <div class="camera-header-actions">
-            <button id="flashCameraBtn" class="flash-btn" type="button" aria-label="Toggle flashlight">⚡</button>
-            <button id="closeCameraBtn" class="close-btn" type="button" aria-label="Close camera">✕</button>
-          </div>
+          <button id="closeCameraBtn" class="close-btn" type="button" aria-label="Close camera">✕</button>
         </div>
         <video id="cameraPreview" class="camera-preview" autoplay muted playsinline></video>
         <p id="cameraStatus" class="camera-status">Barcode ko camera ke frame me rakho.</p>
@@ -1246,7 +1221,6 @@
       let cameraStream = null;
       let cameraScanActive = false;
       let cameraControls = null;
-      let cameraFlashEnabled = false;
       let barcodeScanInProgress = false;
       let receiptSettings = {
         storeName: 'Vastra Sanvedan',
@@ -1321,7 +1295,6 @@
         cameraModal: document.getElementById('cameraModal'),
         cameraPreview: document.getElementById('cameraPreview'),
         cameraStatus: document.getElementById('cameraStatus'),
-        flashCameraBtn: document.getElementById('flashCameraBtn'),
         closeCameraBtn: document.getElementById('closeCameraBtn'),
         upiIdInput: document.getElementById('upiIdInput'),
         receiptHeaderInput: document.getElementById('receiptHeaderInput'),
@@ -1369,34 +1342,30 @@
         elements.toast.className = `toast ${type}`;
       }
 
-      function playScanTone() {
+      function announceBarcodeScan(productName) {
+        if (typeof navigator.vibrate === 'function') navigator.vibrate(120);
+
         try {
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-          if (!AudioContextClass) return;
-          const audioContext = new AudioContextClass();
-          const notes = [880, 1040, 1320];
-          notes.forEach((frequency, index) => {
+          if (AudioContextClass) {
+            const audioContext = new AudioContextClass();
             const oscillator = audioContext.createOscillator();
             const gain = audioContext.createGain();
-            oscillator.type = 'triangle';
-            oscillator.frequency.value = frequency;
-            gain.gain.setValueAtTime(0.001, audioContext.currentTime + index * 0.06);
-            gain.gain.exponentialRampToValueAtTime(0.18, audioContext.currentTime + index * 0.06 + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + index * 0.06 + 0.14);
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 880;
+            gain.gain.setValueAtTime(0.001, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.18, audioContext.currentTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.16);
             oscillator.connect(gain);
             gain.connect(audioContext.destination);
-            oscillator.start(audioContext.currentTime + index * 0.06);
-            oscillator.stop(audioContext.currentTime + index * 0.06 + 0.14);
-          });
-          setTimeout(() => audioContext.close(), 220);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.16);
+            oscillator.addEventListener('ended', () => audioContext.close(), { once: true });
+          }
         } catch (error) {
-          // Audio context can be blocked by browser policies on some devices.
+          // Vibration or audio permissions vary by browser and device.
         }
-      }
 
-      function announceBarcodeScan(productName) {
-        if (typeof navigator.vibrate === 'function') navigator.vibrate([60, 30, 90]);
-        playScanTone();
         setToast(`Scan ho gaya: ${productName}`, 'success');
       }
 
@@ -1736,35 +1705,8 @@
         }
       }
 
-      function updateFlashButton() {
-        const supported = !!cameraStream?.getVideoTracks?.()[0]?.getCapabilities?.().torch;
-        elements.flashCameraBtn.hidden = !supported;
-        elements.flashCameraBtn.classList.toggle('active', cameraFlashEnabled);
-        elements.flashCameraBtn.setAttribute('aria-pressed', String(cameraFlashEnabled));
-      }
-
-      async function setCameraFlash(enabled) {
-        const track = cameraStream?.getVideoTracks?.()[0];
-        if (!track || !track.getCapabilities || !track.getCapabilities().torch) {
-          cameraFlashEnabled = false;
-          updateFlashButton();
-          return;
-        }
-        try {
-          await track.applyConstraints({ advanced: [{ torch: !!enabled }] });
-          cameraFlashEnabled = !!enabled;
-          elements.cameraStatus.textContent = enabled ? 'Flash on hai. Barcode ko frame me rakho.' : 'Barcode ko camera ke frame me rakho.';
-          updateFlashButton();
-        } catch (error) {
-          cameraFlashEnabled = false;
-          updateFlashButton();
-        }
-      }
-
       function closeCameraScanner() {
         cameraScanActive = false;
-        cameraFlashEnabled = false;
-        updateFlashButton();
         if (cameraControls) {
           cameraControls.stop();
           cameraControls = null;
@@ -1792,7 +1734,6 @@
           elements.cameraStatus.textContent = 'Barcode ko camera ke frame me rakho.';
           elements.cameraModal.classList.add('open');
           cameraScanActive = true;
-          updateFlashButton();
           if ('BarcodeDetector' in window) {
             const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'codabar', 'itf'] });
             const detectFrame = async () => {
@@ -2265,10 +2206,6 @@
       elements.closeUpiModal.addEventListener('click', closeUpiModal);
       elements.closeUpiBtn.addEventListener('click', closeUpiModal);
       elements.openCameraBtn.addEventListener('click', openCameraScanner);
-      elements.flashCameraBtn.addEventListener('click', async () => {
-        if (!cameraStream) return;
-        await setCameraFlash(!cameraFlashEnabled);
-      });
       elements.closeCameraBtn.addEventListener('click', closeCameraScanner);
       elements.cameraModal.addEventListener('click', (event) => {
         if (event.target === elements.cameraModal) closeCameraScanner();
