@@ -1,5 +1,6 @@
 const $ = (s) => document.querySelector(s);
 const money = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
+const escapeHtml = (value) => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
 const SECTION_TYPES = ["HERO", "CATEGORIES", "BRANDS", "LOWEST_PRICE", "PRODUCT_CAROUSEL", "PRODUCT_GRID", "FULL_WIDTH_BANNER", "VIDEO", "COLLECTION", "LOOKBOOK", "EDITORIAL", "PROMO_STRIP", "NEW_ARRIVALS", "TRENDING", "FEATURED"];
 const GROUPS = ["MEN", "WOMEN", "KIDS", "HOME", "OTHER"];
 const STATUSES = ["PLACED", "CONFIRMED", "PACKING", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"];
@@ -211,7 +212,7 @@ function productsView() {
   const formatBarcode = (value) => {
     const text = String(value ?? "").trim();
     if (!text) return '<span class="product-barcode-empty">No barcode</span>';
-    return `<span class="product-barcode-box">${text}</span>`;
+    return `<span class="product-barcode-box" data-code="${escapeHtml(text)}">${escapeHtml(text)}</span>`;
   };
   return `<div class="panel"><h2>Products</h2>
     <form class="form" id="productForm">
@@ -388,6 +389,45 @@ function bannersView() {
   </div>`;
 }
 
+function renderProductBarcodePreviews() {
+  const boxes = document.querySelectorAll(".product-barcode-box[data-code]");
+  if (!boxes.length) return;
+
+  boxes.forEach((box) => {
+    const value = String(box.dataset.code || "").trim();
+    if (!value) {
+      box.innerHTML = '<span class="barcode-fallback">No barcode</span>';
+      return;
+    }
+
+    if (!window.JsBarcode) {
+      box.innerHTML = `<span class="barcode-fallback">${escapeHtml(value)}</span>`;
+      return;
+    }
+
+    box.innerHTML = "";
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 180 56");
+    svg.setAttribute("aria-label", `Barcode ${value}`);
+    box.appendChild(svg);
+
+    try {
+      JsBarcode(svg, value, {
+        format: value.length === 13 && /^\d+$/.test(value) ? "ean13" : "CODE128",
+        displayValue: true,
+        fontSize: 10,
+        width: 1.4,
+        height: 36,
+        margin: 8,
+        background: "#fff",
+        lineColor: "#1a2433",
+      });
+    } catch (error) {
+      box.innerHTML = `<span class="barcode-fallback">${escapeHtml(value)}</span>`;
+    }
+  });
+}
+
 function render() {
   const view = {
     dashboard, whatsapp: settingsView, studio, banners: bannersView, categories: () => catalogForm("categories"), brands: () => catalogForm("brands"),
@@ -404,6 +444,7 @@ function render() {
       }
     });
   });
+  renderProductBarcodePreviews();
   bindView();
 }
 
@@ -643,14 +684,51 @@ function bindView() {
 function bindBarcodeStudio() {
   const form = $("#barcodeStudioForm");
   if (!form) return;
+
   const preview = $("#barcodePreview");
   const productSelect = form.productId;
   const codeValue = $("#barcodePreviewValue");
   const previewName = $("#barcodePreviewName");
   const previewMeta = $("#barcodePreviewMeta");
-  const productSearch = $("#barcodeProductSearch");
-  const productList = $("#barcodeProductList");
+
   let currentCode = "";
+
+  const selectedProduct = () => (cache.products || []).find((product) => product._id === productSelect.value);
+
+  const clearStudioPreview = () => {
+    currentCode = "";
+    if (preview) preview.innerHTML = "";
+    if (codeValue) codeValue.textContent = "No barcode generated";
+    if (previewMeta) previewMeta.textContent = "Ready for barcode generation";
+  };
+
+  const renderBarcodePreview = (value) => {
+    if (!preview) return;
+    if (!value) {
+      preview.innerHTML = '<div class="barcode-empty">No barcode assigned</div>';
+      if (codeValue) codeValue.textContent = "No barcode generated";
+      return;
+    }
+
+    currentCode = String(value).trim();
+    if (codeValue) codeValue.textContent = currentCode;
+
+    if (window.JsBarcode) {
+      preview.innerHTML = "";
+      JsBarcode(preview, currentCode, {
+        format: currentCode.length === 13 && /^\d+$/.test(currentCode) ? "ean13" : "CODE128",
+        lineColor: "#152238",
+        width: 2,
+        height: 74,
+        displayValue: true,
+        fontSize: 15,
+        margin: 12,
+      });
+      return;
+    }
+
+    preview.innerHTML = `<div class="barcode-unavailable"><div>Barcode preview unavailable</div><strong>${currentCode}</strong></div>`;
+  };
 
   const loadBarcodeLibrary = () => new Promise((resolve) => {
     if (window.JsBarcode) return resolve(true);
@@ -664,174 +742,83 @@ function bindBarcodeStudio() {
     document.head.appendChild(script);
   });
 
-  const clearBarcodePreview = () => {
-    currentCode = "";
-    if (preview) preview.innerHTML = "";
-    if (codeValue) codeValue.textContent = "No barcode generated";
-    if (previewMeta) previewMeta.textContent = "Ready for barcode generation";
-  };
-
-  const renderBarcodeFallback = (value, label) => {
-    if (!preview || !value) {
-      preview.innerHTML = "";
-      return;
-    }
-    const safeText = String(value).trim();
-    if (!safeText) {
-      preview.innerHTML = "";
-      return;
-    }
-    const width = 420;
-    const height = 150;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
-      <rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff" rx="12" stroke="#d0d7e2" stroke-width="2"/>
-      <rect x="18" y="22" width="${width - 36}" height="72" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
-      <g fill="#0f172a">
-        <rect x="34" y="28" width="4" height="60"/>
-        <rect x="46" y="28" width="8" height="60"/>
-        <rect x="62" y="28" width="2" height="60"/>
-        <rect x="72" y="28" width="8" height="60"/>
-        <rect x="88" y="28" width="4" height="60"/>
-        <rect x="100" y="28" width="12" height="60"/>
-        <rect x="122" y="28" width="3" height="60"/>
-        <rect x="134" y="28" width="7" height="60"/>
-        <rect x="150" y="28" width="5" height="60"/>
-        <rect x="166" y="28" width="10" height="60"/>
-        <rect x="184" y="28" width="2" height="60"/>
-        <rect x="194" y="28" width="9" height="60"/>
-        <rect x="212" y="28" width="4" height="60"/>
-        <rect x="224" y="28" width="6" height="60"/>
-        <rect x="240" y="28" width="12" height="60"/>
-        <rect x="260" y="28" width="3" height="60"/>
-        <rect x="272" y="28" width="8" height="60"/>
-        <rect x="288" y="28" width="5" height="60"/>
-        <rect x="302" y="28" width="11" height="60"/>
-        <rect x="321" y="28" width="3" height="60"/>
-        <rect x="334" y="28" width="8" height="60"/>
-        <rect x="350" y="28" width="2" height="60"/>
-        <rect x="362" y="28" width="10" height="60"/>
-        <rect x="380" y="28" width="5" height="60"/>
-      </g>
-      <text x="${width / 2}" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#111827">${label || safeText}</text>
-      <text x="${width / 2}" y="136" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#475569">Barcode preview unavailable</text>
-    </svg>`;
-    preview.innerHTML = svg;
-  };
-
-  const selectedProduct = () => cache.products.find((product) => product._id === productSelect.value);
-  const syncSelectedProductState = () => {
-    if (!productList) return;
-    productList.querySelectorAll("[data-barcode-product]").forEach((button) => {
-      const isSelected = button.dataset.barcodeProduct === productSelect.value;
-      button.classList.toggle("is-selected", isSelected);
-      button.setAttribute("aria-pressed", String(isSelected));
-    });
-  };
-  const renderProductList = (searchTerm = "") => {
-    if (!productList) return;
-    const term = String(searchTerm || "").trim().toLowerCase();
-    const visibleProducts = (cache.products || []).filter((product) => {
-      if (!term) return true;
-      const haystack = [product.name, product.category, product.brand, product.barcode].filter(Boolean).join(" ").toLowerCase();
-      return haystack.includes(term);
-    });
-    productList.innerHTML = visibleProducts.length
-      ? visibleProducts.map((product) => `
-        <button type="button" class="barcode-product-card ${product.barcode ? "assigned" : "pending"} ${product._id === productSelect.value ? "is-selected" : ""}" data-barcode-product="${product._id}">
-          <div class="barcode-product-top"><strong>${product.name}</strong><span class="barcode-status ${product.barcode ? "assigned" : "pending"}">${product.barcode ? "Assigned" : "No barcode"}</span></div>
-          <small>${product.category || "General"} · ${product.brand || "Unbranded"}</small>
-          <div class="barcode-product-meta"><span>Stock: ${product.stock ?? 0}</span><span>${product.barcode || "—"}</span></div>
-        </button>`).join("")
-      : '<div class="empty-state">No products match this search.</div>';
-    productList.querySelectorAll("[data-barcode-product]").forEach((button) => {
-      button.onclick = () => {
-        productSelect.value = button.dataset.barcodeProduct;
-        productSelect.dispatchEvent(new Event("change"));
-        syncSelectedProductState();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      };
-    });
-    syncSelectedProductState();
-  };
   const ean13 = (digits) => {
     const body = String(digits).replace(/\D/g, "").slice(0, 12).padStart(12, "0");
     const checksum = body.split("").reduce((sum, digit, index) => sum + Number(digit) * (index % 2 ? 3 : 1), 0);
     return body + String((10 - (checksum % 10)) % 10);
   };
+
   const generateCode = () => {
-    const format = form.format.value;
     const product = selectedProduct();
+    if (!product) return clearStudioPreview();
+
+    const format = form.format.value;
     const manual = form.manual.value.trim();
-    if (!product) return clearBarcodePreview();
-    if (manual) currentCode = format === "EAN13" ? ean13(manual) : manual;
-    else if (format === "EAN13") currentCode = ean13(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
-    else currentCode = `${form.prefix.value.trim().toUpperCase() || "VS"}${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 10)}`;
-    if (product) {
-      previewName.textContent = product.name;
-      previewMeta.textContent = `${product.category || "General"} · ${format === "EAN13" ? "EAN-13" : "Code 128"}`;
-    }
-    if (!currentCode) return clearBarcodePreview();
-    preview.innerHTML = "";
-    codeValue.textContent = currentCode;
-    if (window.JsBarcode) {
-      JsBarcode(preview, currentCode, { format: format === "EAN13" ? "ean13" : "CODE128", lineColor: "#152238", width: 2, height: 74, displayValue: true, fontSize: 15, margin: 12 });
+
+    let nextCode = "";
+    if (manual) {
+      nextCode = format === "EAN13" ? ean13(manual) : manual;
+    } else if (format === "EAN13") {
+      nextCode = ean13(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
     } else {
-      renderBarcodeFallback(currentCode, currentCode);
+      nextCode = `${(form.prefix.value || "VS").trim().toUpperCase()}${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 10)}`;
     }
+
+    previewName.textContent = product.name;
+    previewMeta.textContent = `${product.category || "General"} · ${format === "EAN13" ? "EAN-13" : "Code 128"}`;
+    renderBarcodePreview(nextCode);
+    currentCode = nextCode;
   };
+
   productSelect.addEventListener("change", () => {
     const product = selectedProduct();
     if (!product) {
       previewName.textContent = "Select a product";
       previewMeta.textContent = "Ready for barcode generation";
-      codeValue.textContent = "No barcode generated";
-      currentCode = "";
-      preview.innerHTML = "";
-      syncSelectedProductState();
+      clearStudioPreview();
       return;
     }
+
     previewName.textContent = product.name;
     form.manual.value = "";
+
     if (product.barcode) {
       currentCode = product.barcode;
-      codeValue.textContent = currentCode;
-      form.manual.value = currentCode;
       previewMeta.textContent = `${product.category || "General"} · ${currentCode.length === 13 && /^\d+$/.test(currentCode) ? "EAN-13" : "Code 128"}`;
+      renderBarcodePreview(currentCode);
     } else {
       currentCode = "";
-      codeValue.textContent = "No barcode generated";
       previewMeta.textContent = "No barcode assigned yet";
-      preview.innerHTML = "";
-      syncSelectedProductState();
-      return;
+      clearStudioPreview();
     }
-    preview.innerHTML = "";
-    if (currentCode && window.JsBarcode) {
-      JsBarcode(preview, currentCode, { format: currentCode.length === 13 && /^\d+$/.test(currentCode) ? "ean13" : "CODE128", lineColor: "#152238", width: 2, height: 74, displayValue: true, fontSize: 15, margin: 12 });
-    } else if (currentCode) {
-      renderBarcodeFallback(currentCode, currentCode);
-    }
-    syncSelectedProductState();
   });
+
   $("#generateBarcodeBtn").onclick = async () => {
     form.manual.value = "";
     await loadBarcodeLibrary();
     generateCode();
   };
-  productSearch?.addEventListener("input", (event) => renderProductList(event.target.value));
-  renderProductList();
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const product = selectedProduct();
     if (!product) return notice("Select a product first.");
-    if (!currentCode) generateCode();
-    if (!currentCode) return notice("Generate or select a barcode first.");
-    const duplicate = (cache.products || []).find((candidate) => candidate._id !== product._id && String(candidate.barcode || "").trim() === String(currentCode).trim());
-    if (duplicate) return notice(`Barcode ${currentCode} is already assigned to ${duplicate.name}. Pick a different code.`);
+    const generated = currentCode || product.barcode;
+    if (!generated) {
+      await loadBarcodeLibrary();
+      generateCode();
+    }
+
+    const finalCode = currentCode || product.barcode;
+    if (!finalCode) return notice("Generate or select a barcode first.");
+
+    const duplicate = (cache.products || []).find((candidate) => candidate._id !== product._id && String(candidate.barcode || "").trim() === String(finalCode).trim());
+    if (duplicate) return notice(`Barcode ${finalCode} is already assigned to ${duplicate.name}. Pick a different code.`);
+
     try {
       const payload = {
         ...product,
-        barcode: currentCode,
+        barcode: finalCode,
         mrp: Number(product.mrp ?? 0),
         sellingPrice: Number(product.sellingPrice ?? 0),
         stock: Number(product.stock ?? 0),
@@ -848,25 +835,33 @@ function bindBarcodeStudio() {
       delete payload.updatedAt;
       delete payload.__v;
       await api(`/products/${product._id}`, { method: "PUT", body: JSON.stringify(payload) });
-      notice(`Barcode saved for ${product.name}. POS can scan it now.`);
+      notice(`Barcode saved for ${product.name}.`);
       await reload();
       tab = "barcodeStudio";
       render();
     } catch (error) { notice(error.message); }
   });
+
   $("#downloadBarcodeBtn").onclick = () => {
     if (!currentCode) return notice("Generate or select a barcode first.");
     const source = new XMLSerializer().serializeToString(preview);
-    const link = document.createElement("a"); link.href = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(source)}`; link.download = `${currentCode}.svg`; link.click();
+    const link = document.createElement("a");
+    link.href = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(source)}`;
+    link.download = `${currentCode}.svg`;
+    link.click();
   };
+
   $("#printBarcodeBtn").onclick = () => {
     if (!currentCode) return notice("Generate or select a barcode first.");
     const product = selectedProduct();
     const source = new XMLSerializer().serializeToString(preview);
     const popup = window.open("", "_blank", "width=420,height=300");
     if (!popup) return notice("Allow pop-ups to print the label.");
-    popup.document.write(`<title>Barcode label</title><style>body{font-family:Arial;text-align:center;padding:24px}svg{max-width:100%}h3{margin:0 0 8px}</style><h3>${product?.name || "Product"}</h3>${source}<p>${currentCode}</p><script>window.onload=()=>window.print()<\/script>`); popup.document.close();
+    popup.document.write(`<title>Barcode label</title><style>body{font-family:Arial;text-align:center;padding:24px}svg{max-width:100%}h3{margin:0 0 8px}</style><h3>${product?.name || "Product"}</h3>${source}<p>${currentCode}</p><script>window.onload=()=>window.print()<\/script>`);
+    popup.document.close();
   };
+
+  clearStudioPreview();
 }
 
 async function reload() {
