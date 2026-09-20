@@ -736,6 +736,31 @@ function setupChrome() {
   ["searchInput", "filterCategory", "filterMin", "filterMax"].forEach((id) => $(`#${id}`).addEventListener("input", runSearch));
 }
 
+function initLiquidMotion() {
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+  let lastShake = 0;
+  document.addEventListener("pointermove", (event) => {
+    const x = event.clientX / Math.max(window.innerWidth, 1) * 100;
+    const y = event.clientY / Math.max(window.innerHeight, 1) * 100;
+    document.documentElement.style.setProperty("--liquid-x", `${x}%`);
+    document.documentElement.style.setProperty("--liquid-y", `${y}%`);
+    const surface = event.target?.closest?.(".product, .summary-box, .order-card, .panel, .brand-chip, .scroller-item");
+    if (surface) {
+      surface.style.setProperty("--liquid-rx", `${((50 - y) * .035).toFixed(2)}deg`);
+      surface.style.setProperty("--liquid-ry", `${((x - 50) * .035).toFixed(2)}deg`);
+      surface.style.setProperty("--liquid-card-x", `${x}%`);
+      surface.style.setProperty("--liquid-card-y", `${y}%`);
+    }
+  }, { passive: true });
+  document.addEventListener("pointerdown", () => document.body.classList.add("liquid-touch"), { passive: true });
+  document.addEventListener("pointerup", () => document.body.classList.remove("liquid-touch"), { passive: true });
+  const triggerShake = () => {
+    if (Date.now() - lastShake < 900) return;
+    lastShake = Date.now(); document.body.classList.remove("liquid-shake"); void document.body.offsetWidth; document.body.classList.add("liquid-shake"); window.setTimeout(() => document.body.classList.remove("liquid-shake"), 760);
+  };
+  window.addEventListener("devicemotion", (event) => { const a = event.accelerationIncludingGravity || event.acceleration; if (a && Math.hypot(a.x || 0, a.y || 0, a.z || 0) > 19) triggerShake(); }, { passive: true });
+}
+
 async function boot() {
   try {
     const [home, catalog, settings, me] = await Promise.all([
@@ -761,6 +786,7 @@ async function boot() {
     return;
   }
   setupChrome();
+  initLiquidMotion();
   await renderRoute();
 }
 
