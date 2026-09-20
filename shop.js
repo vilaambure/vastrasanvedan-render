@@ -170,11 +170,12 @@ function openOverlay(id) {
 
 function productCard(p) {
   const available = Number(p.stock || 0) > 0;
+  const images = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
   return `<article class="product">
     <div class="product-media">
       <span class="badge">${p.newArrival ? "New" : esc(p.category || "Edit")}</span>
       <button class="heart" data-wish="${p._id}" aria-label="Favourite">${state.wishlist.has(p._id) ? "♥" : "♡"}</button>
-      <a href="/product/${p._id}"><img loading="lazy" src="${esc(img((p.images || [])[0]))}" alt="${esc(p.name)}" onerror="this.src='${fallback}'"></a>
+      <a href="/product/${p._id}"><img class="product-image-primary" loading="lazy" src="${esc(img(images[0]))}" alt="${esc(p.name)}" onerror="this.src='${fallback}'">${images[1] ? `<img class="product-image-secondary" loading="lazy" src="${esc(img(images[1]))}" alt="" onerror="this.remove()">` : ""}</a>
     </div>
     <div class="product-info">
       <h3>${esc(p.name)}</h3>
@@ -568,6 +569,16 @@ function initCinematicMotion() {
     cinematicBound = true;
   }
   updateParallax();
+  if (window.matchMedia?.("(min-width: 900px)").matches) {
+    document.querySelectorAll(".cta, .primary, .view").forEach((button) => {
+      button.addEventListener("pointermove", (event) => {
+        const rect = button.getBoundingClientRect();
+        button.style.setProperty("--mag-x", `${(event.clientX - rect.left - rect.width / 2) * .12}px`);
+        button.style.setProperty("--mag-y", `${(event.clientY - rect.top - rect.height / 2) * .12}px`);
+      }, { passive: true });
+      button.addEventListener("pointerleave", () => { button.style.removeProperty("--mag-x"); button.style.removeProperty("--mag-y"); });
+    });
+  }
 }
 
 function bindPdp() {
