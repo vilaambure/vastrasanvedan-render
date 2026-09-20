@@ -431,6 +431,26 @@ body {
 .hero-slide::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, rgba(16,27,34,.78), transparent 58%, rgba(16,27,34,.18)); pointer-events: none; }
 .hero-copy { z-index: 1; transform: translateZ(24px); animation: hero-rise .8s ease both; }
 .hero h1 { letter-spacing: -.035em; text-shadow: 0 12px 24px rgba(0,0,0,.32); }
+.hero-slide img { transform: translate3d(0, calc(var(--hero-shift, 0px) * -1), 0) scale(1.06); transition: transform .12s linear; }
+.motion-ready .wrap, .motion-ready .product, .motion-ready .editorial, .motion-ready .banner, .motion-ready .lookbook, .motion-ready .brand-chip { opacity: 0; transform: translateY(28px); transition: opacity .75s ease var(--reveal-delay, 0ms), transform .75s cubic-bezier(.2,.75,.2,1) var(--reveal-delay, 0ms); }
+.motion-ready .is-visible { opacity: 1; transform: translateY(0); }
+.motion-ready .hero-copy { animation: cinematic-copy .95s cubic-bezier(.2,.75,.2,1) .12s both; }
+.motion-ready .hero-nav { animation: cinematic-nav .7s ease .6s both; }
+.product:hover { transform: translateY(-9px) scale(1.012); }
+.product:hover .product-media img { transform: scale(1.075); }
+.editorial-media, .banner, .look { transition: transform .8s cubic-bezier(.2,.75,.2,1), filter .8s ease; }
+.motion-ready .editorial:not(.is-visible) .editorial-media, .motion-ready .banner:not(.is-visible), .motion-ready .lookbook:not(.is-visible) .look { filter: saturate(.6); transform: scale(1.04); }
+.editorial.is-visible .editorial-media, .banner.is-visible, .lookbook.is-visible .look { filter: saturate(1); transform: scale(1); }
+@keyframes cinematic-copy { from { opacity: 0; transform: translate3d(0, 34px, 0) scale(.97); filter: blur(8px); } to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); } }
+@keyframes cinematic-nav { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+@media (max-width: 700px) {
+  .hero-slide img { transform: scale(1.03); }
+  .motion-ready .wrap, .motion-ready .product, .motion-ready .editorial, .motion-ready .banner, .motion-ready .lookbook, .motion-ready .brand-chip { transform: translateY(14px); transition-duration: .45s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .motion-ready .wrap, .motion-ready .product, .motion-ready .editorial, .motion-ready .banner, .motion-ready .lookbook, .motion-ready .brand-chip { opacity: 1; transform: none; transition: none; }
+  .hero-slide img { transform: none; }
+}
 .cta, .primary, .view { border-radius: 13px; box-shadow: 0 12px 22px rgba(201,157,79,.24), inset 0 1px 0 rgba(255,255,255,.48); transition: transform .2s ease, box-shadow .2s ease, filter .2s ease; }
 .cta:hover, .primary:hover, .view:hover { transform: translateY(-3px); box-shadow: 0 18px 28px rgba(16,27,34,.18), inset 0 1px 0 rgba(255,255,255,.5); }
 .wrap { position: relative; }

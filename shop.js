@@ -28,6 +28,8 @@ const state = {
   heroIndex: 0,
   heroTimer: null,
 };
+let cinematicBound = false;
+let cinematicFrame = 0;
 
 const $ = (sel) => document.querySelector(sel);
 const money = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
@@ -536,6 +538,38 @@ function bindHero() {
   });
 }
 
+function initCinematicMotion() {
+  document.documentElement.classList.add("motion-ready");
+  const revealItems = document.querySelectorAll(".wrap, .product, .editorial, .banner, .lookbook, .brand-chip");
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) {
+    revealItems.forEach((item) => item.classList.add("is-visible"));
+    return;
+  }
+  const observer = new IntersectionObserver((entries, currentObserver) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-visible");
+      currentObserver.unobserve(entry.target);
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -8%" });
+  revealItems.forEach((item, index) => {
+    item.style.setProperty("--reveal-delay", `${Math.min(index % 8, 7) * 55}ms`);
+    observer.observe(item);
+  });
+  const updateParallax = () => {
+    cinematicFrame = 0;
+    const hero = document.querySelector(".hero");
+    if (!hero) return;
+    const shift = Math.min(window.scrollY * 0.12, 72);
+    hero.style.setProperty("--hero-shift", `${shift}px`);
+  };
+  if (!cinematicBound) {
+    window.addEventListener("scroll", () => { if (!cinematicFrame) cinematicFrame = requestAnimationFrame(updateParallax); }, { passive: true });
+    cinematicBound = true;
+  }
+  updateParallax();
+}
+
 function bindPdp() {
   const p = productById(path().split("/").pop());
   if (!p) return;
@@ -657,6 +691,7 @@ async function renderRoute() {
   $("#app").innerHTML = html;
   bindCards();
   bindHero();
+  initCinematicMotion();
   bindPdp();
   bindBag();
   bindAuth();
