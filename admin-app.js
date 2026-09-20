@@ -18,6 +18,7 @@ async function api(path, options = {}) {
 function notice(text) { $("#notice").textContent = text || ""; }
 function showLogin(_text = "") { const shell = $("#shell"); if (shell) shell.hidden = false; }
 function field(name, label, extra = "") { return `<label class="field">${label}<input name="${name}" ${extra}></label>`; }
+const COMMON_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "Free Size"];
 
 async function fileUrl(inputOrFile, fallback = "") {
   const file = inputOrFile instanceof File ? inputOrFile : inputOrFile?.files?.[0];
@@ -219,7 +220,16 @@ function productsView() {
       ${field("name", "Name", "required")}${field("category", "Category", "required")}
       ${field("brand", "Brand")}${field("barcode", "Barcode")}
       ${field("mrp", "MRP", 'type="number" min="0" required')}${field("sellingPrice", "Selling price", 'type="number" min="0" required')}
-      ${field("stock", "Stock", 'type="number" min="0" required')}${field("sizes", "Sizes")}${field("colors", "Colours")}
+      ${field("stock", "Stock", 'type="number" min="0" required')}
+      <label class="field full">Sizes
+        <input name="sizes" id="productSizes" placeholder="Choose below or type custom sizes, separated by commas">
+        <div class="size-presets" role="group" aria-label="Common sizes">
+          ${COMMON_SIZES.map((size) => `<button type="button" class="ghost" data-size-preset="${size}">${size}</button>`).join("")}
+        </div>
+        <label class="check-row"><input type="checkbox" id="productNoSize"> This product has no size (for example saree, dupatta, decor)</label>
+        <small class="subtle">Leave empty or select “no size” when size does not apply.</small>
+      </label>
+      ${field("colors", "Colours")}
       <label class="field full">Description<textarea name="description"></textarea></label>
       <label class="field full">Details<textarea name="details"></textarea></label>
       ${field("material", "Material")}${field("careInstructions", "Care")}
@@ -624,7 +634,7 @@ function bindView() {
       const payload = {
         ...values,
         mrp: +values.mrp, sellingPrice: +values.sellingPrice, stock: +values.stock,
-        sizes: String(values.sizes || "").split(",").map((x) => x.trim()).filter(Boolean),
+        sizes: form.productNoSize.checked ? [] : String(values.sizes || "").split(",").map((x) => x.trim()).filter(Boolean),
         colors: String(values.colors || "").split(",").map((x) => x.trim()).filter(Boolean),
         images: [...String(values.images || "").split(",").map((x) => x.trim()).filter(Boolean), ...uploaded],
         active: form.active.checked, newArrival: form.newArrival.checked, featured: form.featured.checked, trending: form.trending.checked,
@@ -632,6 +642,18 @@ function bindView() {
       await api(id ? `/products/${id}` : "/products", { method: id ? "PUT" : "POST", body: JSON.stringify(payload) });
       await reload();
     } catch (error) { notice(error.message); }
+  });
+  document.querySelectorAll("[data-size-preset]").forEach((button) => button.onclick = () => {
+    const input = $("#productSizes");
+    const sizes = new Set(String(input.value || "").split(",").map((size) => size.trim()).filter(Boolean));
+    sizes.has(button.dataset.sizePreset) ? sizes.delete(button.dataset.sizePreset) : sizes.add(button.dataset.sizePreset);
+    input.value = [...sizes].join(", ");
+    $("#productNoSize").checked = false;
+  });
+  $("#productNoSize")?.addEventListener("change", (event) => {
+    $("#productSizes").disabled = event.target.checked;
+    document.querySelectorAll("[data-size-preset]").forEach((button) => { button.disabled = event.target.checked; });
+    if (event.target.checked) $("#productSizes").value = "";
   });
   document.querySelectorAll("[data-edit-product]").forEach((b) => b.onclick = () => {
     const p = cache.products.find((x) => x._id === b.dataset.editProduct);
@@ -642,6 +664,9 @@ function bindView() {
     form.newArrival.checked = p.newArrival;
     form.featured.checked = p.featured;
     form.trending.checked = p.trending;
+    form.productNoSize.checked = !(p.sizes || []).length;
+    form.productSizes.disabled = form.productNoSize.checked;
+    document.querySelectorAll("[data-size-preset]").forEach((button) => { button.disabled = form.productNoSize.checked; });
   });
   document.querySelectorAll("[data-active-product]").forEach((b) => b.onclick = async () => {
     const p = cache.products.find((x) => x._id === b.dataset.activeProduct);

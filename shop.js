@@ -32,6 +32,7 @@ const state = {
 const $ = (sel) => document.querySelector(sel);
 const money = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 const fallback = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000"><rect fill="#e7dfd4" width="800" height="1000"/><text x="50%" y="50%" fill="#7b7369" font-size="28" text-anchor="middle" font-family="serif">Vastra Sanvedan</text></svg>');
+const productSizes = (product) => Array.isArray(product?.sizes) ? product.sizes.filter(Boolean) : [];
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]));
 const STATUSES = ["PLACED", "CONFIRMED", "PACKING", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"];
 
@@ -46,7 +47,7 @@ function addToBag(productId, options = {}) {
     name: product.name,
     price: Number(product.sellingPrice || 0),
     qty: Number(options.qty || 1),
-    size: options.size || product.sizes?.[0] || "One size",
+    size: options.size || productSizes(product)[0] || "",
     color: options.color || product.colors?.[0] || "Signature",
     image: (product.images || [])[0] || "",
   };
@@ -125,7 +126,7 @@ function whatsappNumber(raw = "") {
 function buildWhatsAppUrl(items = [], total = 0, customer = {}) {
   const phone = whatsappNumber(state.settings?.contactPhone || "+91 99999 99999");
   if (!phone) return "";
-  const productLines = items.map((item) => `${item.name} • ${item.size || "One size"} • ${item.color || "Signature"} • ${item.qty} × ${money(item.price || 0)}`).join("\n");
+  const productLines = items.map((item) => `${item.name}${item.size ? ` • ${item.size}` : ""} • ${item.color || "Signature"} • ${item.qty} × ${money(item.price || 0)}`).join("\n");
   const customerInfo = customer.name || customer.phone || customer.address ? `\nCustomer: ${customer.name || ""}${customer.phone ? `\nPhone: ${customer.phone}` : ""}${customer.address ? `\nAddress: ${customer.address}${customer.city ? `, ${customer.city}` : ""}${customer.pincode ? `, ${customer.pincode}` : ""}` : ""}` : "";
   const template = state.settings?.whatsappMessage || "Hello Vastra Sanvedan,\nI want to order:\n{productLines}\n\nTotal: {total}{customerInfo}\n\nPlease confirm availability and delivery details.";
   const messageText = template
@@ -204,7 +205,7 @@ function bindCards(root = document) {
       e.preventDefault();
       const product = productById(btn.dataset.bagAdd);
       if (!product) return;
-      addToBag(product._id, { size: product.sizes?.[0] || "One size", color: product.colors?.[0] || "Signature", qty: 1 });
+      addToBag(product._id, { size: productSizes(product)[0] || "", color: product.colors?.[0] || "Signature", qty: 1 });
     };
   });
 }
@@ -212,12 +213,13 @@ function bindCards(root = document) {
 function openQuick(id) {
   const p = productById(id);
   if (!p) return;
-  state.selected = { product: p, size: p.sizes?.[0] || "One size", color: p.colors?.[0] || "Signature" };
+  const sizes = productSizes(p);
+  state.selected = { product: p, size: sizes[0] || "", color: p.colors?.[0] || "Signature" };
   $("#modalBox").innerHTML = `<div class="modal-head"><h2>${esc(p.name)}</h2><button class="icon-btn close-x" data-close-modal aria-label="Close">×</button></div>
     <p>${esc(p.description || "")}</p>
     <div class="prices"><strong>${money(p.sellingPrice)}</strong><del>${money(p.mrp)}</del></div>
     <p>${Number(p.stock) > 0 ? `${p.stock} in stock` : "Out of stock"}</p>
-    <label class="field">Size<div class="swatches" id="qSizes">${(p.sizes || ["One size"]).map((s) => `<button type="button" class="${s === state.selected.size ? "active" : ""}" data-size="${esc(s)}">${esc(s)}</button>`).join("")}</div></label>
+    ${sizes.length ? `<label class="field">Size<div class="swatches" id="qSizes">${sizes.map((s) => `<button type="button" class="${s === state.selected.size ? "active" : ""}" data-size="${esc(s)}">${esc(s)}</button>`).join("")}</div></label>` : ""}
     <label class="field">Colour<div class="swatches" id="qColors">${(p.colors || ["Signature"]).map((c) => `<button type="button" class="${c === state.selected.color ? "active" : ""}" data-color="${esc(c)}">${esc(c)}</button>`).join("")}</div></label>
     <button class="primary" id="quickWhatsApp">Order on WhatsApp</button>
     <a class="ghost" style="display:block;text-align:center" href="/product/${p._id}">View full details</a>`;
@@ -232,7 +234,7 @@ function openQuick(id) {
       name: p.name,
       qty: 1,
       price: p.sellingPrice,
-      size: state.selected.size || p.sizes?.[0] || "One size",
+      size: state.selected.size || sizes[0] || "",
       color: state.selected.color || p.colors?.[0] || "Signature",
     };
     openWhatsAppOrder([item], item.price);
@@ -358,7 +360,7 @@ function pdp() {
       <div class="prices"><strong>${money(p.sellingPrice)}</strong><del>${money(p.mrp)}</del><span class="off">${p.discount || 0}% off</span></div>
       <p>${esc(p.description || "")}</p>
       <p><strong>${Number(p.stock) > 0 ? `${p.stock} available` : "Out of stock"}</strong></p>
-      <label class="field">Size<div class="swatches" id="pSizes">${(p.sizes || ["One size"]).map((s, i) => `<button type="button" class="${i === 0 ? "active" : ""}" data-size="${esc(s)}">${esc(s)}</button>`).join("")}</div></label>
+      ${productSizes(p).length ? `<label class="field">Size<div class="swatches" id="pSizes">${productSizes(p).map((s, i) => `<button type="button" class="${i === 0 ? "active" : ""}" data-size="${esc(s)}">${esc(s)}</button>`).join("")}</div></label>` : ""}
       <label class="field">Colour<div class="swatches" id="pColors">${(p.colors || ["Signature"]).map((c, i) => `<button type="button" class="${i === 0 ? "active" : ""}" data-color="${esc(c)}">${esc(c)}</button>`).join("")}</div></label>
       <button class="ghost" id="pWhatsApp" ${p.stock < 1 ? "disabled" : ""}>Order on WhatsApp</button>
       <button class="ghost" id="pAddBag" ${p.stock < 1 ? "disabled" : ""}>Add to bag</button>
@@ -384,7 +386,7 @@ function bagPage() {
         <img src="${esc(img(item.image))}" alt="${esc(item.name)}" style="width:72px;height:96px;object-fit:cover;border-radius:12px;">
         <div>
           <strong>${esc(item.name)}</strong><br>
-          <small>${esc(item.size || "One size")} / ${esc(item.color || "Signature")}</small><br>
+          <small>${item.size ? `${esc(item.size)} / ` : ""}${esc(item.color || "Signature")}</small><br>
           <strong>${money(item.price)}</strong>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
@@ -534,7 +536,7 @@ function bindHero() {
 function bindPdp() {
   const p = productById(path().split("/").pop());
   if (!p) return;
-  let size = p.sizes?.[0] || "One size";
+  let size = productSizes(p)[0] || "";
   let color = p.colors?.[0] || "Signature";
   document.querySelectorAll("#pSizes [data-size]").forEach((b) => b.onclick = () => { size = b.dataset.size; document.querySelectorAll("#pSizes button").forEach((x) => x.classList.toggle("active", x === b)); });
   document.querySelectorAll("#pColors [data-color]").forEach((b) => b.onclick = () => { color = b.dataset.color; document.querySelectorAll("#pColors button").forEach((x) => x.classList.toggle("active", x === b)); });
