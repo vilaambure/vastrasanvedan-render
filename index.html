@@ -876,9 +876,6 @@
         .panel, .analytics-panel, .mini-panel { padding: 16px; }
         .reset-archive-btn { width: 100%; }
       }
-      .panel::after, .mini-panel::after, .analytics-panel::after, .metric::after, .scan-strip::after, .product-detail-card::after { content: ''; position: absolute; z-index: 0; width: 42%; height: 22%; left: -18%; top: -12%; pointer-events: none; border-radius: 50%; background: rgba(255,255,255,.22); filter: blur(18px); opacity: .62; animation: pos-liquid-float 7s ease-in-out infinite; }
-      .panel > *, .mini-panel > *, .analytics-panel > *, .metric > *, .scan-strip > *, .product-detail-card > * { position: relative; z-index: 1; }
-      @keyframes pos-liquid-float { 0%,100% { translate: 0 0; scale: 1; } 50% { translate: 220% 320%; scale: 1.8; } }
     </style>
   </head>
   <body>
@@ -2258,24 +2255,6 @@
           resetCashTill();
         }
       });
-      (function initPosLiquidMotion() {
-        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-        let lastShake = 0;
-        document.addEventListener('pointermove', (event) => {
-          const x = event.clientX / Math.max(window.innerWidth, 1) * 100;
-          const y = event.clientY / Math.max(window.innerHeight, 1) * 100;
-          document.documentElement.style.setProperty('--liquid-x', `${x}%`);
-          document.documentElement.style.setProperty('--liquid-y', `${y}%`);
-          const surface = event.target.closest('.panel, .mini-panel, .analytics-panel, .metric, .scan-strip, .product-detail-card');
-          if (surface) { surface.style.setProperty('--liquid-rx', `${((50 - y) * .035).toFixed(2)}deg`); surface.style.setProperty('--liquid-ry', `${((x - 50) * .035).toFixed(2)}deg`); }
-        }, { passive: true });
-        window.addEventListener('devicemotion', (event) => {
-          const a = event.accelerationIncludingGravity || event.acceleration;
-          if (!a || Math.hypot(a.x || 0, a.y || 0, a.z || 0) <= 19 || Date.now() - lastShake < 900) return;
-          lastShake = Date.now(); document.body.classList.remove('liquid-shake'); void document.body.offsetWidth; document.body.classList.add('liquid-shake'); window.setTimeout(() => document.body.classList.remove('liquid-shake'), 760);
-        }, { passive: true });
-        document.addEventListener('pointerdown', () => { if (typeof DeviceMotionEvent?.requestPermission === 'function') DeviceMotionEvent.requestPermission().catch(() => {}); }, { once: true, passive: true });
-      }());
     </script>
     <script>
       window.addEventListener('pagehide', () => {

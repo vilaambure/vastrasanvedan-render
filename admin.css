@@ -1067,13 +1067,3 @@ body { background: radial-gradient(circle at 10% 0, rgba(201,157,79,.14), transp
 .bar { background: linear-gradient(180deg, #c99d4f, #266c67 70%, #101b22); box-shadow: 0 6px 14px rgba(16,27,34,.16); }
 .table tr:hover td { background: rgba(229,240,236,.48); }
 @media (max-width: 900px) { .side { box-shadow: 0 12px 28px rgba(16,27,34,.08); } }
-.panel, .metric, .barcode-preview-card, .announcement-item { --liquid-rx: 0deg; --liquid-ry: 0deg; position: relative; isolation: isolate; }
-.panel::before, .metric::before, .barcode-preview-card::before, .announcement-item::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit; background: radial-gradient(circle at var(--liquid-card-x, 50%) var(--liquid-card-y, 0%), rgba(255,255,255,.42), transparent 34%); opacity: 0; transition: opacity .25s ease; }
-.panel::after, .metric::after, .barcode-preview-card::after, .announcement-item::after { content: ""; position: absolute; z-index: 0; width: 42%; height: 22%; left: -18%; top: -12%; pointer-events: none; border-radius: 50%; background: rgba(255,255,255,.22); filter: blur(18px); opacity: .62; animation: liquid-float 7s ease-in-out infinite; }
-.panel > *, .metric > *, .barcode-preview-card > *, .announcement-item > * { position: relative; z-index: 1; }
-.panel:hover, .metric:hover, .barcode-preview-card:hover, .announcement-item:hover { transform: perspective(900px) rotateX(var(--liquid-rx)) rotateY(var(--liquid-ry)) translateY(-5px); }
-.panel:hover::before, .metric:hover::before, .barcode-preview-card:hover::before, .announcement-item:hover::before { opacity: 1; }
-body.liquid-shake .dashboard-hero, body.liquid-shake .metrics, body.liquid-shake .dashboard-grid, body.liquid-shake #view { animation: liquid-shake .72s cubic-bezier(.2,.8,.2,1); }
-@keyframes liquid-shake { 0%,100% { transform: translate3d(0,0,0) skewX(0); } 18% { transform: translate3d(-5px,2px,0) skewX(-.7deg); } 42% { transform: translate3d(6px,-2px,0) skewX(.7deg); } 68% { transform: translate3d(-3px,1px,0) skewX(-.35deg); } }
-@keyframes liquid-float { 0%,100% { translate: 0 0; scale: 1; } 50% { translate: 220% 320%; scale: 1.8; } }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }

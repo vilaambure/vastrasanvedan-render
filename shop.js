@@ -27,8 +27,6 @@ const state = {
   accountNotice: "",
   heroIndex: 0,
   heroTimer: null,
-  fabricFrame: null,
-  fabricCleanup: null,
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -259,12 +257,12 @@ function productsForSection(section) {
 function renderHero() {
   const slides = heroes();
   if (!slides.length) {
-    return `<section class="hero"><canvas class="fabric-canvas" aria-hidden="true"></canvas><div class="hero-slide active" style="background-image:linear-gradient(#1c1814aa,#1c181466),url('${fallback}')">
+    return `<section class="hero"><div class="hero-slide active" style="background-image:linear-gradient(#1c1814aa,#1c181466),url('${fallback}')">
       <div class="hero-copy"><span class="eyebrow">Vastra Sanvedan</span><h1>Clothes with a point of view.</h1><p>A considered wardrobe, drawn from the live catalogue.</p><a class="cta" href="/shop">Explore the collection</a></div></div></section>`;
   }
   const i = state.heroIndex % slides.length;
   const slide = slides[i];
-  return `<section class="hero" id="hero"><canvas class="fabric-canvas" aria-hidden="true"></canvas>
+  return `<section class="hero" id="hero">
     ${slides.map((s, idx) => `<div class="hero-slide ${idx === i ? "active" : ""}">
       <picture>
         <source media="(max-width: 700px)" srcset="${esc(s.mobileImage || s.image || fallback)}">
@@ -538,85 +536,6 @@ function bindHero() {
   });
 }
 
-function initFabricCanvas() {
-  if (state.fabricCleanup) state.fabricCleanup();
-  const canvas = document.querySelector(".fabric-canvas");
-  if (!canvas || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-  const context = canvas.getContext("2d");
-  if (!context) return;
-  const pointer = { x: 0.5, y: 0.5 };
-  let width = 0;
-  let height = 0;
-  let start = performance.now();
-  const colors = ["#102f36", "#266c67", "#b97855", "#c99d4f", "#f1d9a2"];
-  const resize = () => {
-    const rect = canvas.getBoundingClientRect();
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    width = rect.width;
-    height = rect.height;
-    canvas.width = Math.round(width * ratio);
-    canvas.height = Math.round(height * ratio);
-    context.setTransform(ratio, 0, 0, ratio, 0, 0);
-  };
-  const move = (event) => {
-    const rect = canvas.getBoundingClientRect();
-    pointer.x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-    pointer.y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
-  };
-  const draw = (now) => {
-    const time = (now - start) * 0.00042;
-    context.clearRect(0, 0, width, height);
-    const wash = context.createLinearGradient(0, 0, width, height);
-    wash.addColorStop(0, "rgba(9, 24, 31, .78)");
-    wash.addColorStop(.52, "rgba(22, 67, 69, .28)");
-    wash.addColorStop(1, "rgba(8, 18, 24, .84)");
-    context.fillStyle = wash;
-    context.fillRect(0, 0, width, height);
-    const sway = (pointer.x - .5) * width * .08;
-    colors.forEach((color, band) => {
-      const offset = band * height * .14 - height * .2;
-      const amplitude = height * (.12 + band * .012);
-      const phase = time * (1.1 + band * .08) + band * .9;
-      context.beginPath();
-      for (let x = -width * .12; x <= width * 1.12; x += Math.max(8, width / 70)) {
-        const normalized = x / width;
-        const y = height * .56 + offset + Math.sin(normalized * 5.8 + phase) * amplitude + Math.sin(normalized * 12 - phase * 1.4) * amplitude * .22 + sway * (normalized - .5);
-        if (x === -width * .12) context.moveTo(x, y);
-        else context.lineTo(x, y);
-      }
-      context.lineTo(width * 1.12, height * 1.2);
-      context.lineTo(-width * .12, height * 1.2);
-      context.closePath();
-      const fabric = context.createLinearGradient(0, 0, width, height);
-      fabric.addColorStop(0, color);
-      fabric.addColorStop(.48, color + "dd");
-      fabric.addColorStop(1, "#08161c");
-      context.fillStyle = fabric;
-      context.globalAlpha = .72;
-      context.fill();
-      context.globalAlpha = 1;
-    });
-    const glint = context.createLinearGradient(width * (.1 + pointer.x * .2), 0, width * (.7 + pointer.x * .2), height);
-    glint.addColorStop(0, "rgba(255,255,255,0)");
-    glint.addColorStop(.48, "rgba(255,244,201,.2)");
-    glint.addColorStop(.55, "rgba(255,255,255,0)");
-    context.globalCompositeOperation = "screen";
-    context.fillStyle = glint;
-    context.fillRect(0, 0, width, height);
-    context.globalCompositeOperation = "source-over";
-    state.fabricFrame = requestAnimationFrame(draw);
-  };
-  resize();
-  window.addEventListener("resize", resize, { passive: true });
-  canvas.addEventListener("pointermove", move, { passive: true });
-  state.fabricCleanup = () => {
-    cancelAnimationFrame(state.fabricFrame);
-    window.removeEventListener("resize", resize);
-    canvas.removeEventListener("pointermove", move);
-  };
-  state.fabricFrame = requestAnimationFrame(draw);
-}
-
 function bindPdp() {
   const p = productById(path().split("/").pop());
   if (!p) return;
@@ -738,7 +657,6 @@ async function renderRoute() {
   $("#app").innerHTML = html;
   bindCards();
   bindHero();
-  initFabricCanvas();
   bindPdp();
   bindBag();
   bindAuth();
@@ -818,32 +736,6 @@ function setupChrome() {
   ["searchInput", "filterCategory", "filterMin", "filterMax"].forEach((id) => $(`#${id}`).addEventListener("input", runSearch));
 }
 
-function initLiquidMotion() {
-  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-  let lastShake = 0;
-  document.addEventListener("pointermove", (event) => {
-    const x = event.clientX / Math.max(window.innerWidth, 1) * 100;
-    const y = event.clientY / Math.max(window.innerHeight, 1) * 100;
-    document.documentElement.style.setProperty("--liquid-x", `${x}%`);
-    document.documentElement.style.setProperty("--liquid-y", `${y}%`);
-    const surface = event.target?.closest?.(".product, .summary-box, .order-card, .panel, .brand-chip, .scroller-item");
-    if (surface) {
-      surface.style.setProperty("--liquid-rx", `${((50 - y) * .035).toFixed(2)}deg`);
-      surface.style.setProperty("--liquid-ry", `${((x - 50) * .035).toFixed(2)}deg`);
-      surface.style.setProperty("--liquid-card-x", `${x}%`);
-      surface.style.setProperty("--liquid-card-y", `${y}%`);
-    }
-  }, { passive: true });
-  document.addEventListener("pointerdown", () => document.body.classList.add("liquid-touch"), { passive: true });
-  document.addEventListener("pointerup", () => document.body.classList.remove("liquid-touch"), { passive: true });
-  const triggerShake = () => {
-    if (Date.now() - lastShake < 900) return;
-    lastShake = Date.now(); document.body.classList.remove("liquid-shake"); void document.body.offsetWidth; document.body.classList.add("liquid-shake"); window.setTimeout(() => document.body.classList.remove("liquid-shake"), 760);
-  };
-  window.addEventListener("devicemotion", (event) => { const a = event.accelerationIncludingGravity || event.acceleration; if (a && Math.hypot(a.x || 0, a.y || 0, a.z || 0) > 19) triggerShake(); }, { passive: true });
-  document.addEventListener("pointerdown", () => { if (typeof DeviceMotionEvent?.requestPermission === "function") DeviceMotionEvent.requestPermission().catch(() => {}); }, { once: true, passive: true });
-}
-
 async function boot() {
   try {
     const [home, catalog, settings, me] = await Promise.all([
@@ -869,7 +761,6 @@ async function boot() {
     return;
   }
   setupChrome();
-  initLiquidMotion();
   await renderRoute();
 }
 

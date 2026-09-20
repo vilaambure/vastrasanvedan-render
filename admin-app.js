@@ -7,22 +7,6 @@ const STATUSES = ["PLACED", "CONFIRMED", "PACKING", "SHIPPED", "IN_TRANSIT", "OU
 let cache = { products: [], categories: [], brands: [], sections: [], announcements: [], orders: [], customers: [], analytics: null, settings: null, pages: [] };
 let tab = "dashboard";
 
-function initLiquidMotion() {
-  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-  let lastShake = 0;
-  document.addEventListener("pointermove", (event) => {
-    const x = event.clientX / Math.max(window.innerWidth, 1) * 100;
-    const y = event.clientY / Math.max(window.innerHeight, 1) * 100;
-    const surface = event.target?.closest?.(".panel, .metric, .barcode-preview-card, .announcement-item");
-    document.documentElement.style.setProperty("--liquid-x", `${x}%`);
-    document.documentElement.style.setProperty("--liquid-y", `${y}%`);
-    if (surface) { surface.style.setProperty("--liquid-rx", `${((50 - y) * .035).toFixed(2)}deg`); surface.style.setProperty("--liquid-ry", `${((x - 50) * .035).toFixed(2)}deg`); surface.style.setProperty("--liquid-card-x", `${x}%`); surface.style.setProperty("--liquid-card-y", `${y}%`); }
-  }, { passive: true });
-  const triggerShake = () => { if (Date.now() - lastShake < 900) return; lastShake = Date.now(); document.body.classList.remove("liquid-shake"); void document.body.offsetWidth; document.body.classList.add("liquid-shake"); window.setTimeout(() => document.body.classList.remove("liquid-shake"), 760); };
-  window.addEventListener("devicemotion", (event) => { const a = event.accelerationIncludingGravity || event.acceleration; if (a && Math.hypot(a.x || 0, a.y || 0, a.z || 0) > 19) triggerShake(); }, { passive: true });
-  document.addEventListener("pointerdown", () => { if (typeof DeviceMotionEvent?.requestPermission === "function") DeviceMotionEvent.requestPermission().catch(() => {}); }, { once: true, passive: true });
-}
-
 async function api(path, options = {}) {
   const isRaw = options.raw;
   const res = await fetch("/api/admin" + path, { credentials: "same-origin", ...options, headers: isRaw ? options.headers : { "Content-Type": "application/json", ...(options.headers || {}) } });
@@ -1316,5 +1300,4 @@ function openShell() {
 
 document.querySelectorAll("#nav button").forEach((b) => b.onclick = () => { tab = b.dataset.tab; render(); });
 
-initLiquidMotion();
 openShell();
