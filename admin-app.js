@@ -372,8 +372,9 @@ function inventoryView() {
   };
   return `<div class="panel"><h2>Shared inventory</h2>
     <p>Online store and POS use the same stock field. Sales decrement atomically.</p>
+    <label class="check-row"><input id="lowStockOnly" type="checkbox"> Show only low stock (below 5)</label>
     <table class="table"><thead><tr><th>Product</th><th>Barcode</th><th>Stock</th><th>Status</th></tr></thead><tbody>
-      ${cache.products.map((p) => `<tr><td>${p.name}</td><td>${formatBarcode(p.barcode)}</td><td>${p.stock}</td><td>${p.stock < 1 ? "Out" : p.stock < 5 ? "Low" : "OK"}</td></tr>`).join("")}
+      ${cache.products.map((p) => `<tr data-inventory-row data-stock="${Number(p.stock || 0)}"><td>${escapeHtml(p.name)}</td><td>${formatBarcode(p.barcode)}</td><td>${p.stock}</td><td>${p.stock < 1 ? "Out" : p.stock < 5 ? "Low" : "OK"}</td></tr>`).join("")}
     </tbody></table></div>`;
 }
 
@@ -385,6 +386,7 @@ function ordersView() {
       <p>${(o.items || []).map((i) => `${i.name} × ${i.qty}`).join(", ")}</p>
       <form class="form status-form" data-order="${o._id}">
         <label class="field">Status<select name="status">${STATUSES.map((s) => `<option ${s === o.orderStatus ? "selected" : ""}>${s}</option>`).join("")}</select></label>
+        <label class="field">Internal note<input name="note" placeholder="Optional status note"></label>
         <button class="primary">Update status</button>
       </form>
     </div>`).join("") || "<p>No orders yet.</p>"}</div>`;
@@ -693,6 +695,11 @@ function bindView() {
       notice("Order status updated. Customer status is now refreshed.");
       await reload();
     } catch (error) { notice(error.message); }
+  });
+  $("#lowStockOnly")?.addEventListener("change", (event) => {
+    document.querySelectorAll("[data-inventory-row]").forEach((row) => {
+      row.hidden = event.target.checked && Number(row.dataset.stock) >= 5;
+    });
   });
   document.querySelectorAll(".pay-form").forEach((form) => form.onsubmit = async (e) => {
     e.preventDefault();

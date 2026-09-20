@@ -27,6 +27,13 @@ async function updateOrderStatus(req, res) {
     order.orderStatus = status;
     order.statusHistory.push({ status, at: new Date(), note: String(req.body?.note || "").trim() });
     await order.save();
+    await AuditEvent.create({
+      actor: "admin",
+      action: "ORDER_STATUS_UPDATED",
+      targetType: "Order",
+      targetId: String(order._id),
+      details: `${order.invoiceNumber} -> ${status}${req.body?.note ? ` · ${String(req.body.note).trim()}` : ""}`,
+    });
     res.json({ success: true, order });
   } catch (error) {
     res.status(400).json({ success: false, message: "Order could not be updated." });

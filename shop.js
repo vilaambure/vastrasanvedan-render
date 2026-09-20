@@ -412,6 +412,7 @@ function checkoutPage() {
   if (!items.length) {
     return `<section class="wrap"><div class="section-head"><span class="eyebrow">Checkout</span><h2>Your bag is empty</h2></div><a class="cta" href="/shop">Continue shopping</a></section>`;
   }
+  if (!state.customer) return `<section class="wrap" style="max-width:760px"><div class="section-head"><span class="eyebrow">Checkout</span><h2>Sign in to place your order</h2></div><p class="empty">Your bag is saved. Sign in or create an account to continue with secure stock reservation and order tracking.</p><a class="cta" href="/account">Open account</a></section>`;
   const subtotal = items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
   return `<section class="wrap" style="max-width:760px">
     <div class="section-head"><span class="eyebrow">Checkout</span><h2>Place your order</h2></div>
@@ -426,7 +427,9 @@ function checkoutPage() {
         ${items.map((item) => `<p>${esc(item.name)} × ${item.qty} — ${money(Number(item.price || 0) * Number(item.qty || 0))}</p>`).join("")}
         <p><strong>Total</strong> <span style="float:right;">${money(subtotal)}</span></p>
       </div>
-      <button class="primary" type="submit" style="margin-top:16px;">Place order on WhatsApp</button>
+      <p id="checkoutMessage" class="empty" aria-live="polite"></p>
+      <button class="primary" type="submit" style="margin-top:16px;">Place order</button>
+      <button class="ghost" type="button" id="checkoutWhatsApp" style="margin-top:10px;">Continue on WhatsApp instead</button>
     </form>
   </section>`;
 }
@@ -456,9 +459,7 @@ function bindBag() {
 function accountForm() {
   return `<section class="wrap" style="max-width:720px">
     <div class="section-head"><span class="eyebrow">Account</span><h2>Account</h2></div>
-    <div class="empty" style="padding:20px;border:1px solid rgba(0,0,0,.08);border-radius:16px;">
-      Customer account access is currently turned off for this store. You can continue shopping and place orders directly.
-    </div>
+    ${state.customer ? `<div class="summary-box" style="padding:20px;border:1px solid rgba(0,0,0,.08);border-radius:16px;"><h3>${esc(state.customer.name || "Customer")}</h3><p>${esc(state.customer.email || "")}${state.customer.phone ? ` · ${esc(state.customer.phone)}` : ""}</p><a class="cta" href="/orders">View my orders</a> <button class="ghost" id="logoutBtn" type="button">Sign out</button></div><form id="profileForm" style="margin-top:18px"><label class="field">Name<input name="name" value="${esc(state.customer.name || "")}" required></label><label class="field">Phone<input name="phone" value="${esc(state.customer.phone || "")}" required></label><button class="primary" type="submit">Save profile</button></form>` : `<div class="auth-grid"><form id="loginForm" class="summary-box"><h3>Sign in</h3><label class="field">Email or phone<input name="identifier" autocomplete="username" required></label><label class="field">Password<input name="password" type="password" autocomplete="current-password" required></label><button class="primary" type="submit">Sign in</button></form><form id="registerForm" class="summary-box"><h3>Create account</h3><label class="field">Name<input name="name" required></label><label class="field">Email<input name="email" type="email" autocomplete="email" required></label><label class="field">Phone<input name="phone" type="tel" autocomplete="tel"></label><label class="field">Password<input name="password" type="password" minlength="8" autocomplete="new-password" required></label><button class="primary" type="submit">Create account</button></form></div><p id="authMsg" class="empty" aria-live="polite">${esc(state.accountNotice)}</p>`}
   </section>`;
 }
 
@@ -477,12 +478,14 @@ function ordersBanner() {
 }
 
 async function ordersPage() {
-  return `<section class="wrap" style="max-width:720px">
-    <div class="section-head"><span class="eyebrow">Orders</span><h2>Orders</h2></div>
-    <div class="empty" style="padding:20px;border:1px solid rgba(0,0,0,.08);border-radius:16px;">
-      Order tracking is currently turned off for this store. You can still shop and place orders directly.
-    </div>
-  </section>`;
+  if (!state.customer) return `<section class="wrap" style="max-width:720px"><div class="section-head"><span class="eyebrow">Orders</span><h2>Sign in to track orders</h2></div><a class="cta" href="/account">Open account</a></section>`;
+  try {
+    const data = await api("/api/shop/orders");
+    const orders = data.orders || [];
+    return `<section class="wrap" style="max-width:760px"><div class="section-head"><span class="eyebrow">Orders</span><h2>My orders</h2></div>${orders.map((order) => `<article class="summary-box" style="margin-bottom:16px;padding:18px;border:1px solid rgba(0,0,0,.08);border-radius:16px;"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><strong>${esc(order.invoiceNumber)}</strong><strong>${money(order.totalAmount)}</strong></div><p>${new Date(order.createdAt).toLocaleString("en-IN")} · ${esc(order.paymentStatus)} · ${esc(order.paymentMode)}</p><p>${(order.items || []).map((item) => `${esc(item.name)} × ${item.qty}`).join(", ")}</p>${orderTimeline(order)}</article>`).join("") || '<p class="empty">No orders yet. Explore the collection to begin.</p>'}</section>`;
+  } catch (error) {
+    return `<section class="wrap" style="max-width:720px"><div class="section-head"><span class="eyebrow">Orders</span><h2>Orders unavailable</h2></div><p class="empty">${esc(error.message)}</p></section>`;
+  }
 }
 
 function startOrdersRefresh() {
@@ -644,6 +647,8 @@ async function renderRoute() {
   if (route.startsWith("/product/")) html = pdp();
   else if (route === "/bag") html = bagPage();
   else if (route === "/checkout") html = checkoutPage();
+  else if (route === "/account") html = accountForm();
+  else if (route === "/orders") html = await ordersPage();
   else if (route === "/contact") html = await staticPage("contact", "Contact us");
   else if (route === "/faqs") html = await staticPage("faqs", "FAQs");
   else if (route === "/legal") html = await staticPage("legal", "Legal");
@@ -657,12 +662,27 @@ async function renderRoute() {
   bindAuth();
   startOrdersRefresh();
   if (route === "/checkout") {
-    document.getElementById("checkoutForm")?.addEventListener("submit", (e) => {
+    document.getElementById("checkoutForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const form = new FormData(e.target);
       const values = Object.fromEntries(form.entries());
+      const submit = e.target.querySelector("button[type='submit']");
+      if (submit) { submit.disabled = true; submit.textContent = "Placing order..."; }
+      try {
+        const data = await api("/api/shop/checkout", { method: "POST", body: JSON.stringify({ items: state.bag, customer: values }) });
+        state.bag = [];
+        persistBag();
+        state.accountNotice = `Order ${data.invoiceNumber} placed successfully.`;
+        history.pushState({}, "", "/orders");
+        await renderRoute();
+      } catch (error) {
+        const message = document.getElementById("checkoutMessage");
+        if (message) message.textContent = error.message;
+      } finally { if (submit) { submit.disabled = false; submit.textContent = "Place order"; } }
+    });
+    document.getElementById("checkoutWhatsApp")?.addEventListener("click", () => {
       const total = state.bag.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
-      openWhatsAppOrder(state.bag, total, values);
+      openWhatsAppOrder(state.bag, total, Object.fromEntries(new FormData(document.getElementById("checkoutForm"))));
     });
   }
   document.querySelectorAll(".menu-nav a").forEach((a) => { a.onclick = () => { $("#menu").hidden = true; }; });

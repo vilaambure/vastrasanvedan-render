@@ -21,10 +21,12 @@ const { uploadMedia } = require("./controllers/mediaController");
 const app = express();
 const PORT = process.env.PORT || 5000;
 const adminSessions = new Map();
+const adminLoginAttempts = new Map();
 const customerSessions = new Map();
 const googleOAuthStates = new Map();
 const customerOtpChallenges = new Map();
 app.locals.adminSessions = adminSessions;
+app.locals.adminLoginAttempts = adminLoginAttempts;
 app.locals.customerSessions = customerSessions;
 app.locals.googleOAuthStates = googleOAuthStates;
 app.locals.customerOtpChallenges = customerOtpChallenges;
@@ -77,10 +79,17 @@ app.get("/admin/pos", (req, res) => {
 });
 
 app.post("/api/admin/login", (req, res) => {
+  const key = req.ip || req.socket.remoteAddress || "unknown";
+  const now = Date.now();
+  const recent = (adminLoginAttempts.get(key) || []).filter((timestamp) => now - timestamp < 15 * 60 * 1000);
+  if (recent.length >= 5) return res.status(429).json({ success: false, message: "Too many login attempts. Try again later." });
   const password = String(req.body?.password ?? "").trim();
   if (!adminPasswordMatches(password)) {
+    recent.push(now);
+    adminLoginAttempts.set(key, recent);
     return res.status(401).json({ success: false, message: "Invalid admin password." });
   }
+  adminLoginAttempts.delete(key);
   const token = crypto.randomBytes(24).toString("hex");
   adminSessions.set(token, { createdAt: new Date().toISOString() });
   res.set("Set-Cookie", cookieHeader("vs_admin_session", token, 60 * 60 * 12));
