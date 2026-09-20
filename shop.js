@@ -759,6 +759,7 @@ function initLiquidMotion() {
     lastShake = Date.now(); document.body.classList.remove("liquid-shake"); void document.body.offsetWidth; document.body.classList.add("liquid-shake"); window.setTimeout(() => document.body.classList.remove("liquid-shake"), 760);
   };
   window.addEventListener("devicemotion", (event) => { const a = event.accelerationIncludingGravity || event.acceleration; if (a && Math.hypot(a.x || 0, a.y || 0, a.z || 0) > 19) triggerShake(); }, { passive: true });
+  document.addEventListener("pointerdown", () => { if (typeof DeviceMotionEvent?.requestPermission === "function") DeviceMotionEvent.requestPermission().catch(() => {}); }, { once: true, passive: true });
 }
 
 async function boot() {
