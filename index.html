@@ -876,6 +876,9 @@
         .panel, .analytics-panel, .mini-panel { padding: 16px; }
         .reset-archive-btn { width: 100%; }
       }
+      .panel::after, .mini-panel::after, .analytics-panel::after, .metric::after, .scan-strip::after, .product-detail-card::after { content: ''; position: absolute; z-index: 0; width: 42%; height: 22%; left: -18%; top: -12%; pointer-events: none; border-radius: 50%; background: rgba(255,255,255,.22); filter: blur(18px); opacity: .62; animation: pos-liquid-float 7s ease-in-out infinite; }
+      .panel > *, .mini-panel > *, .analytics-panel > *, .metric > *, .scan-strip > *, .product-detail-card > * { position: relative; z-index: 1; }
+      @keyframes pos-liquid-float { 0%,100% { translate: 0 0; scale: 1; } 50% { translate: 220% 320%; scale: 1.8; } }
     </style>
   </head>
   <body>

@@ -438,15 +438,18 @@ body {
   --liquid-rx: 0deg; --liquid-ry: 0deg; position: relative; isolation: isolate;
 }
 .product::before, .scroller-item::before, .brand-chip::before, .summary-box::before, .order-card::before, .panel::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit;
   background: radial-gradient(circle at var(--liquid-card-x, 50%) var(--liquid-card-y, 0%), rgba(255,255,255,.48), transparent 34%);
   opacity: 0; transition: opacity .25s ease;
 }
+.product::after, .scroller-item::after, .brand-chip::after, .summary-box::after, .order-card::after, .panel::after { content: ""; position: absolute; z-index: 0; width: 42%; height: 22%; left: -18%; top: -12%; pointer-events: none; border-radius: 50%; background: rgba(255,255,255,.24); filter: blur(18px); opacity: .62; transform: rotate(-18deg); animation: liquid-float 7s ease-in-out infinite; }
+.product > *, .scroller-item > *, .brand-chip > *, .summary-box > *, .order-card > *, .panel > * { position: relative; z-index: 1; }
 .product:hover, .scroller-item:hover, .brand-chip:hover, .summary-box:hover, .order-card:hover, .panel:hover { transform: perspective(900px) rotateX(var(--liquid-rx)) rotateY(var(--liquid-ry)) translateY(-7px); }
 .product:hover::before, .scroller-item:hover::before, .brand-chip:hover::before, .summary-box:hover::before, .order-card:hover::before, .panel:hover::before { opacity: 1; }
 body.liquid-touch .product, body.liquid-touch .scroller-item, body.liquid-touch .brand-chip, body.liquid-touch .summary-box, body.liquid-touch .order-card, body.liquid-touch .panel { animation: liquid-wave .62s cubic-bezier(.2,.8,.2,1); }
 body.liquid-shake .hero, body.liquid-shake .product-grid, body.liquid-shake .rail, body.liquid-shake .scroller { animation: liquid-shake .72s cubic-bezier(.2,.8,.2,1); }
 @keyframes liquid-wave { 0% { filter: saturate(1); } 35% { filter: saturate(1.22) brightness(1.04); transform: scale(1.012); } 100% { filter: saturate(1); transform: scale(1); } }
+@keyframes liquid-float { 0%,100% { translate: 0 0; scale: 1; } 50% { translate: 220% 320%; scale: 1.8; } }
 @keyframes liquid-shake { 0%,100% { transform: translate3d(0,0,0) skewX(0); } 18% { transform: translate3d(-5px,2px,0) skewX(-.7deg); } 42% { transform: translate3d(6px,-2px,0) skewX(.7deg); } 68% { transform: translate3d(-3px,1px,0) skewX(-.35deg); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 @media (max-width: 980px) {
