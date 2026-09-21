@@ -25,7 +25,7 @@ function adminSettings(settings) {
 async function getSettings(req, res) {
   try {
     const settings = await StoreSettings.findOne({ key: "store" }).lean();
-    const payload = req.adminSession ? adminSettings(settings) : publicSettings(settings);
+    const payload = req.adminSession ? adminSettings(settings) : { ...publicSettings(settings), upiQrImage: "" };
     res.json({ success: true, settings: payload });
   } catch (error) {
     res.status(500).json({ success: false, message: "Payment settings could not be loaded." });

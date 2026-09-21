@@ -809,21 +809,17 @@ function setupChrome() {
 async function boot() {
   startCinematicIntro();
   try {
-    const [homeResult, catalogResult, settingsResult] = await Promise.allSettled([
+    const [homeResult, catalogResult] = await Promise.allSettled([
       api("/api/content/homepage"),
       api("/api/shop/catalog"),
-      api("/api/shop/settings"),
     ]);
     const home = homeResult.status === "fulfilled" ? homeResult.value : {};
     const catalog = catalogResult.status === "fulfilled" ? catalogResult.value : {};
-    const settings = settingsResult.status === "fulfilled" ? settingsResult.value : {};
     state.sections = home.sections || [];
     state.announcements = home.announcements || [];
     state.products = home.products?.length ? home.products : (await api("/api/shop/products")).products || [];
     state.categories = catalog.categories || home.categories || [];
     state.brands = catalog.brands || home.brands || [];
-    state.settings = settings.settings || state.settings;
-    applyStoreSettings();
   } catch (_e) {
     $("#app").innerHTML = `<div class="state">The collection is temporarily unavailable.</div>`;
     setupChrome();
@@ -831,6 +827,10 @@ async function boot() {
   }
   setupChrome();
   await renderRoute();
+  api("/api/shop/settings").then((settings) => {
+    state.settings = settings.settings || state.settings;
+    applyStoreSettings();
+  }).catch(() => {});
 }
 
 window.addEventListener("popstate", () => renderRoute());

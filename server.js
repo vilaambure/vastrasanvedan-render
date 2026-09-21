@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const compression = require("compression");
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 const path = require("path");
@@ -32,6 +33,7 @@ app.locals.googleOAuthStates = googleOAuthStates;
 app.locals.customerOtpChallenges = customerOtpChallenges;
 
 app.use(cors({ origin: false }));
+app.use(compression());
 app.use("/api/payments/webhook", express.raw({ type: "application/json", limit: "1mb" }));
 app.post("/api/admin/media", requireAdmin, express.raw({ type: ["video/mp4", "image/jpeg", "image/png", "image/webp"], limit: "40mb" }), uploadMedia);
 app.use(express.json({ limit: "12mb" }));
