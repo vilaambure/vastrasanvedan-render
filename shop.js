@@ -126,7 +126,11 @@ function whatsappNumber(raw = "") {
 function buildWhatsAppUrl(items = [], total = 0, customer = {}) {
   const phone = whatsappNumber(state.settings?.contactPhone || "+91 99999 99999");
   if (!phone) return "";
-  const productLines = items.map((item) => `${item.name}${item.size ? ` • ${item.size}` : ""} • ${item.color || "Signature"} • ${item.qty} × ${money(item.price || 0)}`).join("\n");
+  const productLines = items.map((item) => {
+    const imageSource = item.image || productById(item.productId)?.images?.[0] || "";
+    const imageUrl = imageSource ? new URL(img(imageSource), window.location.origin).href : "";
+    return `${item.name}${item.size ? ` • ${item.size}` : ""} • ${item.color || "Signature"} • ${item.qty} × ${money(item.price || 0)}${imageUrl ? `\nImage: ${imageUrl}` : ""}`;
+  }).join("\n");
   const customerInfo = customer.name || customer.phone || customer.address ? `\nCustomer: ${customer.name || ""}${customer.phone ? `\nPhone: ${customer.phone}` : ""}${customer.address ? `\nAddress: ${customer.address}${customer.city ? `, ${customer.city}` : ""}${customer.pincode ? `, ${customer.pincode}` : ""}` : ""}` : "";
   const template = state.settings?.whatsappMessage || "Hello Vastra Sanvedan,\nI want to order:\n{productLines}\n\nTotal: {total}{customerInfo}\n\nPlease confirm availability and delivery details.";
   const messageText = template
@@ -237,6 +241,7 @@ function openQuick(id) {
       price: p.sellingPrice,
       size: state.selected.size || sizes[0] || "",
       color: state.selected.color || p.colors?.[0] || "Signature",
+      image: (p.images || [])[0] || "",
     };
     openWhatsAppOrder([item], item.price);
   });
@@ -552,7 +557,7 @@ function bindPdp() {
     zoom.onclick = () => zoom.remove();
     document.body.appendChild(zoom);
   });
-  $("#pWhatsApp")?.addEventListener("click", () => openWhatsAppOrder([{ productId: p._id, name: p.name, qty: 1, price: p.sellingPrice, size, color }], p.sellingPrice));
+  $("#pWhatsApp")?.addEventListener("click", () => openWhatsAppOrder([{ productId: p._id, name: p.name, qty: 1, price: p.sellingPrice, size, color, image: (p.images || [])[0] || "" }], p.sellingPrice));
   $("#pAddBag")?.addEventListener("click", () => { addToBag(p._id, { size, color, qty: 1 }); });
 }
 
