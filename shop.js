@@ -39,6 +39,7 @@ const campaignAssets = [
   "/uploads/1788786718260-560f0bdb8f8f.jpg",
   "/uploads/1788934467395-eb60889f60b8.jpg",
 ];
+const silkVideo = "/assets/videos/vastra-silk-bg.mp4";
 const productSizes = (product) => Array.isArray(product?.sizes) ? product.sizes.filter(Boolean) : [];
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]));
 const STATUSES = ["PLACED", "CONFIRMED", "PACKING", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"];
@@ -349,7 +350,7 @@ function renderHero() {
         <source media="(max-width: 700px)" srcset="${esc(campaignImage(s.mobileImage || s.image, idx + 1))}">
         <img src="${esc(campaignImage(s.image, idx))}" alt="${esc(s.title)}" onerror="this.src='${campaignAssets[idx % campaignAssets.length]}'">
       </picture>
-      ${s.videoUrl && idx === i ? `<video autoplay muted loop playsinline poster="${esc(s.posterImage || s.mobileImage || "")}" src="${esc(s.videoUrl)}"></video>` : ""}
+      ${idx === i ? `<video class="hero-silk-video" autoplay muted loop playsinline preload="auto" poster="${esc(campaignImage(s.posterImage || s.mobileImage || s.image, idx))}" src="${esc(s.videoUrl || silkVideo)}" onerror="this.remove()"></video>` : ""}
       <span class="hero-vfx" aria-hidden="true"><i></i><i></i><i></i></span><div class="hero-copy"><span class="eyebrow">${esc(s.subtitle || "Vastra Sanvedan / 01")}</span><h1>${esc(s.title || "The season, considered.")}</h1><p>${esc(s.description || "")}</p>${s.ctaLabel ? `<a class="cta" href="${esc(s.ctaUrl || "/shop")}">${esc(s.ctaLabel)}</a>` : `<a class="cta" href="/shop">Enter the collection</a>`}</div><span class="hero-caption">${String(idx + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}<br>Vastra Sanvedan</span>
     </div>`).join("")}
     <div class="hero-nav">${slides.map((_, idx) => `<button class="${idx === i ? "active" : ""}" data-hero="${idx}" aria-label="Slide ${idx + 1}"></button>`).join("")}</div>
@@ -557,6 +558,15 @@ async function staticPage(slug, fallbackTitle) {
 
 function bindHero() {
   const slides = heroes();
+  document.querySelectorAll(".hero-silk-video").forEach((video) => {
+    video.muted = true;
+    const start = () => video.play().catch(() => {});
+    if (video.readyState >= 2) start();
+    else {
+      video.addEventListener("loadeddata", start, { once: true });
+      video.addEventListener("canplay", start, { once: true });
+    }
+  });
   document.querySelectorAll("[data-hero]").forEach((b) => {
     b.onclick = () => { state.heroIndex = Number(b.dataset.hero); renderRoute(); };
   });
