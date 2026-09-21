@@ -202,10 +202,22 @@ function openWhatsAppOrder(items = state.bag, total = state.bag.reduce((sum, ite
 }
 
 async function api(url, options = {}) {
-  const res = await fetch(apiUrl(url), { credentials: "include", ...options, headers: { "Content-Type": "application/json", ...(options.headers || {}) } });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || "Request failed.");
-  return data;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), Number(options.timeout || 15000));
+  const { timeout: _timeout, signal, ...requestOptions } = options;
+  try {
+    const res = await fetch(apiUrl(url), {
+      credentials: "include",
+      ...requestOptions,
+      signal: signal || controller.signal,
+      headers: { "Content-Type": "application/json", ...(requestOptions.headers || {}) },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || "Request failed.");
+    return data;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 function closeOverlays() {
@@ -745,11 +757,14 @@ function setupChrome() {
 async function boot() {
   startCinematicIntro();
   try {
-    const [home, catalog, settings] = await Promise.all([
+    const [homeResult, catalogResult, settingsResult] = await Promise.allSettled([
       api("/api/content/homepage"),
       api("/api/shop/catalog"),
       api("/api/shop/settings"),
     ]);
+    const home = homeResult.status === "fulfilled" ? homeResult.value : {};
+    const catalog = catalogResult.status === "fulfilled" ? catalogResult.value : {};
+    const settings = settingsResult.status === "fulfilled" ? settingsResult.value : {};
     state.sections = home.sections || [];
     state.announcements = home.announcements || [];
     state.products = home.products?.length ? home.products : (await api("/api/shop/products")).products || [];
