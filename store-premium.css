@@ -53,8 +53,8 @@ body::before {
   object-fit: cover;
   object-position: center 24%;
   z-index: 0;
-  opacity: 0.58;
-  filter: saturate(0.84) contrast(1.04) brightness(0.74) sepia(0.06);
+  opacity: 0.32;
+  filter: saturate(0.78) contrast(1.0) brightness(0.72) sepia(0.04);
   pointer-events: none;
   background: linear-gradient(135deg, #3a0b1a, #6b1730 45%, #12090d);
   transform: translate(-50%, -50%) scale(1.2);
@@ -99,14 +99,15 @@ body.cinematic-loading .cinematic-intro { opacity: 1; visibility: visible; trans
   --hero-x: 0px;
   --hero-y: 0px;
   min-height: 82vh;
-  background: rgba(31, 10, 18, 0.06);
+  background: rgba(31, 10, 18, 0.02);
   box-shadow: none;
   position: relative;
   isolation: isolate;
 }
-.hero-slide { background-color: rgba(31,10,18,0.06); }
+.hero-slide { background-color: rgba(31,10,18,0.02); }
 .hero-slide::before { content: ""; position: absolute; inset: 24px; z-index: 1; border: 1px solid rgba(248,236,225,.28); pointer-events: none; }
-.hero-slide::after { background: linear-gradient(102deg, rgba(48,10,24,.12) 0%, rgba(48,10,24,.08) 24%, rgba(48,10,24,.04) 48%, rgba(48,10,24,0) 100%); }
+.hero-slide::after { background: linear-gradient(102deg, rgba(48,10,24,.04) 0%, rgba(48,10,24,.04) 24%, rgba(48,10,24,.02) 48%, rgba(48,10,24,0) 100%); }
+.hero-slide img { filter: brightness(1.08) saturate(1.1) contrast(1.02); }
 .hero-slide picture, .hero-slide img { height: 82vh; }
 .hero-slide picture, .hero-slide img, .hero-slide video { transform: translate3d(var(--hero-x), var(--hero-y), 0) scale(1.035); transition: transform .5s ease-out; }
 .hero-slide picture, .hero-slide video { position: absolute; inset: 0; width: 100%; }
