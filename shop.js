@@ -62,7 +62,7 @@ function addToBag(productId, options = {}) {
 function applyStoreSettings() {
   const settings = state.settings || {};
   const storeName = settings.storeName || "Vastra Sanvedan";
-  const tagline = settings.tagline || "Clothes with a point of view.";
+  const tagline = settings.tagline || "style that feel like you";
   const primaryColor = settings.primaryColor || "#1c1814";
   const accentColor = settings.accentColor || "#d9c3a0";
   const backgroundColor = settings.backgroundColor || "#f4efe8";
@@ -208,19 +208,21 @@ function openOverlay(id) {
   if (el) el.hidden = false;
 }
 
-function productCard(p) {
+function productCard(p, options = {}) {
   const available = Number(p.stock || 0) > 0;
   const images = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
-  return `<article class="product">
+  return `<article class="product${options.lead ? " product--lead" : ""}">
     <div class="product-media">
-      <span class="badge">${p.newArrival ? "New" : esc(p.category || "Edit")}</span>
+      <span class="badge">${p.newArrival ? "New arrival" : esc(p.category || "Edit")}</span>
       <button class="heart" data-wish="${p._id}" aria-label="Favourite">${state.wishlist.has(p._id) ? "♥" : "♡"}</button>
       <a href="/product/${p._id}"><img class="product-image-primary" loading="lazy" src="${esc(img(images[0]))}" alt="${esc(p.name)}" onerror="this.src='${fallback}'">${images[1] ? `<img class="product-image-secondary" loading="lazy" src="${esc(img(images[1]))}" alt="" onerror="this.remove()">` : ""}</a>
     </div>
     <div class="product-info">
+      <span class="product-index">${String(state.products.indexOf(p) + 1).padStart(2, "0")}</span>
       <h3>${esc(p.name)}</h3>
       <p>${esc(p.brand || p.description || "From the live atelier catalogue.")}</p>
       <div class="prices"><strong>${money(p.sellingPrice)}</strong><del>${money(p.mrp)}</del><span class="off">${p.discount || 0}% off</span></div>
+      <small class="stock-note ${available ? "is-available" : "is-sold-out"}">${available ? `${p.stock} piece${Number(p.stock) === 1 ? "" : "s"} available` : "Currently unavailable"}</small>
       <div class="stacked-actions">
         <button class="view" data-quick="${p._id}" ${available ? "" : "disabled"}>${available ? "Quick view" : "Out of stock"}</button>
         <button class="ghost" data-bag-add="${p._id}" ${available ? "" : "disabled"}>Add to bag</button>
@@ -301,8 +303,8 @@ function productsForSection(section) {
 function renderHero() {
   const slides = heroes();
   if (!slides.length) {
-    return `<section class="hero"><div class="hero-slide active" style="background-image:linear-gradient(#1c1814aa,#1c181466),url('${fallback}')">
-      <div class="hero-copy"><span class="eyebrow">Vastra Sanvedan</span><h1>Clothes with a point of view.</h1><p>A considered wardrobe, drawn from the live catalogue.</p><a class="cta" href="/shop">Explore the collection</a></div></div></section>`;
+    return `<section class="hero hero-empty"><div class="hero-slide active" style="background-image:linear-gradient(115deg,#300a18,#751b35)">
+      <div class="hero-orbit" aria-hidden="true"></div><div class="hero-copy"><span class="eyebrow">Vastra Sanvedan / 01</span><h1>Style that feels like you.</h1><p>A considered wardrobe, drawn from the live catalogue.</p><a class="cta" href="/shop">Enter the collection</a></div><span class="hero-caption">The house edit<br>2026</span></div></section>`;
   }
   const i = state.heroIndex % slides.length;
   const slide = slides[i];
@@ -313,7 +315,7 @@ function renderHero() {
         <img src="${esc(s.image || fallback)}" alt="${esc(s.title)}">
       </picture>
       ${s.videoUrl && idx === i ? `<video autoplay muted loop playsinline poster="${esc(s.posterImage || s.mobileImage || "")}" src="${esc(s.videoUrl)}"></video>` : ""}
-      <div class="hero-copy"><span class="eyebrow">${esc(s.subtitle || "Vastra Sanvedan")}</span><h1>${esc(s.title || "The season, considered.")}</h1><p>${esc(s.description || "")}</p>${s.ctaLabel ? `<a class="cta" href="${esc(s.ctaUrl || "/shop")}">${esc(s.ctaLabel)}</a>` : ""}</div>
+      <div class="hero-copy"><span class="eyebrow">${esc(s.subtitle || "Vastra Sanvedan / 01")}</span><h1>${esc(s.title || "The season, considered.")}</h1><p>${esc(s.description || "")}</p>${s.ctaLabel ? `<a class="cta" href="${esc(s.ctaUrl || "/shop")}">${esc(s.ctaLabel)}</a>` : `<a class="cta" href="/shop">Enter the collection</a>`}</div><span class="hero-caption">${String(idx + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}<br>Vastra Sanvedan</span>
     </div>`).join("")}
     <div class="hero-nav">${slides.map((_, idx) => `<button class="${idx === i ? "active" : ""}" data-hero="${idx}" aria-label="Slide ${idx + 1}"></button>`).join("")}</div>
   </section>`;
@@ -336,8 +338,8 @@ function renderSection(section) {
   if (["HERO", "HERO_CAMPAIGN"].includes(type)) return "";
   if (["CATEGORIES", "CATEGORY_SHOWCASE"].includes(type)) {
     const cats = state.categories.length ? state.categories : [...new Set(state.products.map((p) => p.category).filter(Boolean))].map((name) => ({ name }));
-    return `<section class="wrap"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "Shop by world")}</span><h2>${esc(section.title || "Categories")}</h2></div>
-      <div class="scroller">${cats.map((c) => `<a class="scroller-item" href="/shop?category=${encodeURIComponent(c.name)}" style="background-image:linear-gradient(#1c181488,#1c181466),url('${esc(c.image || "")}')"><h3>${esc(c.name)}</h3></a>`).join("")}</div></section>`;
+    return `<section class="wrap reveal-section"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "Shop by world")}</span><h2>${esc(section.title || "Categories")}</h2>${section.description ? `<p class="section-note">${esc(section.description)}</p>` : ""}</div>
+      <div class="scroller">${cats.map((c, index) => `<a class="scroller-item" href="/shop?category=${encodeURIComponent(c.name)}" style="background-image:linear-gradient(140deg,#300a18cc,#751b3566),url('${esc(c.image || "")}')"><span class="category-index">0${index + 1}</span><h3>${esc(c.name)}</h3><span class="category-arrow">↗</span></a>`).join("")}</div></section>`;
   }
   if (type === "BRANDS") {
     return `<section class="wrap"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "Houses we keep")}</span><h2>${esc(section.title || "Brands")}</h2></div>
@@ -358,8 +360,8 @@ function renderSection(section) {
   if (type === "VIDEO") return videoBlock(section);
   const items = productsForSection(section);
   const grid = ["PRODUCT_GRID", "FEATURED"].includes(type);
-  return `<section class="wrap"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "From the catalogue")}</span><h2>${esc(section.title || type.replaceAll("_", " "))}</h2></div>
-    <div class="${grid ? "product-grid" : "rail"}">${items.map(productCard).join("") || '<p class="empty">No products in this edit yet.</p>'}</div></section>`;
+  return `<section class="wrap reveal-section"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "From the catalogue")}</span><h2>${esc(section.title || type.replaceAll("_", " "))}</h2>${section.description ? `<p class="section-note">${esc(section.description)}</p>` : ""}</div>
+    <div class="${grid ? "product-grid" : "rail"}">${items.map((item, index) => productCard(item, { lead: grid && index === 0 })).join("") || '<p class="empty">No products in this edit yet.</p>'}</div></section>`;
 }
 
 function homepage() {
@@ -580,6 +582,23 @@ function bindHero() {
   });
 }
 
+function bindReveals() {
+  const sections = document.querySelectorAll(".reveal-section");
+  if (!sections.length) return;
+  if (!("IntersectionObserver" in window)) {
+    sections.forEach((section) => section.classList.add("is-visible"));
+    return;
+  }
+  const observer = new IntersectionObserver((entries, currentObserver) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-visible");
+      currentObserver.unobserve(entry.target);
+    });
+  }, { rootMargin: "0px 0px -12% 0px", threshold: 0.08 });
+  sections.forEach((section) => observer.observe(section));
+}
+
 function bindPdp() {
   const p = productById(path().split("/").pop());
   if (!p) return;
@@ -704,6 +723,7 @@ async function renderRoute() {
   $("#app").innerHTML = html;
   bindCards();
   bindHero();
+  bindReveals();
   bindPdp();
   bindBag();
   bindAuth();
