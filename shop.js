@@ -36,6 +36,19 @@ const productSizes = (product) => Array.isArray(product?.sizes) ? product.sizes.
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]));
 const STATUSES = ["PLACED", "CONFIRMED", "PACKING", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"];
 
+function startCinematicIntro() {
+  const intro = document.getElementById("cinematicIntro");
+  if (!intro) return;
+  document.body.classList.add("cinematic-loading");
+  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const dismiss = () => {
+    document.body.classList.remove("cinematic-loading");
+    intro.addEventListener("transitionend", () => intro.remove(), { once: true });
+    window.setTimeout(() => intro.remove(), 900);
+  };
+  window.setTimeout(dismiss, reduced ? 40 : 950);
+}
+
 function persist() { localStorage.setItem("vs_wishlist", JSON.stringify([...state.wishlist])); }
 function persistBag() { localStorage.setItem("vs_bag", JSON.stringify(state.bag)); }
 
@@ -238,9 +251,6 @@ function bindCards(root = document) {
       const id = btn.dataset.wish;
       state.wishlist.has(id) ? state.wishlist.delete(id) : state.wishlist.add(id);
       persist();
-      if (state.customer) {
-        try { await api("/api/customer/me", { method: "PUT", body: JSON.stringify({ wishlist: [...state.wishlist] }) }); } catch (_e) {}
-      }
       renderRoute();
     };
   });
@@ -304,7 +314,7 @@ function renderHero() {
   const slides = heroes();
   if (!slides.length) {
     return `<section class="hero hero-empty"><div class="hero-slide active" style="background-image:linear-gradient(115deg,#300a18,#751b35)">
-      <div class="hero-orbit" aria-hidden="true"></div><div class="hero-copy"><span class="eyebrow">Vastra Sanvedan / 01</span><h1>Style that feels like you.</h1><p>A considered wardrobe, drawn from the live catalogue.</p><a class="cta" href="/shop">Enter the collection</a></div><span class="hero-caption">The house edit<br>2026</span></div></section>`;
+      <span class="hero-vfx" aria-hidden="true"><i></i><i></i><i></i></span><div class="hero-orbit" aria-hidden="true"></div><div class="hero-copy"><span class="eyebrow">Vastra Sanvedan / 01</span><h1>Style that feels like you.</h1><p>A considered wardrobe, drawn from the live catalogue.</p><a class="cta" href="/shop">Enter the collection</a></div><span class="hero-caption">The house edit<br>2026</span></div></section>`;
   }
   const i = state.heroIndex % slides.length;
   const slide = slides[i];
@@ -315,7 +325,7 @@ function renderHero() {
         <img src="${esc(s.image || fallback)}" alt="${esc(s.title)}">
       </picture>
       ${s.videoUrl && idx === i ? `<video autoplay muted loop playsinline poster="${esc(s.posterImage || s.mobileImage || "")}" src="${esc(s.videoUrl)}"></video>` : ""}
-      <div class="hero-copy"><span class="eyebrow">${esc(s.subtitle || "Vastra Sanvedan / 01")}</span><h1>${esc(s.title || "The season, considered.")}</h1><p>${esc(s.description || "")}</p>${s.ctaLabel ? `<a class="cta" href="${esc(s.ctaUrl || "/shop")}">${esc(s.ctaLabel)}</a>` : `<a class="cta" href="/shop">Enter the collection</a>`}</div><span class="hero-caption">${String(idx + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}<br>Vastra Sanvedan</span>
+      <span class="hero-vfx" aria-hidden="true"><i></i><i></i><i></i></span><div class="hero-copy"><span class="eyebrow">${esc(s.subtitle || "Vastra Sanvedan / 01")}</span><h1>${esc(s.title || "The season, considered.")}</h1><p>${esc(s.description || "")}</p>${s.ctaLabel ? `<a class="cta" href="${esc(s.ctaUrl || "/shop")}">${esc(s.ctaLabel)}</a>` : `<a class="cta" href="/shop">Enter the collection</a>`}</div><span class="hero-caption">${String(idx + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}<br>Vastra Sanvedan</span>
     </div>`).join("")}
     <div class="hero-nav">${slides.map((_, idx) => `<button class="${idx === i ? "active" : ""}" data-hero="${idx}" aria-label="Slide ${idx + 1}"></button>`).join("")}</div>
   </section>`;
@@ -447,36 +457,8 @@ function bagPage() {
     `).join("")}</div>
     <div class="summary-box" style="margin-top:18px;padding:18px;border:1px solid rgba(0,0,0,.08);border-radius:16px;">
       <p><strong>Subtotal</strong> <span style="float:right;">${money(subtotal)}</span></p>
-      <a class="cta" href="/checkout" style="display:inline-block;margin-top:10px;">Proceed to checkout</a>
       <button class="primary" id="bagWhatsApp" style="margin-top:10px;">Order on WhatsApp</button>
     </div>
-  </section>`;
-}
-
-function checkoutPage() {
-  const items = state.bag;
-  if (!items.length) {
-    return `<section class="wrap"><div class="section-head"><span class="eyebrow">Checkout</span><h2>Your bag is empty</h2></div><a class="cta" href="/shop">Continue shopping</a></section>`;
-  }
-  if (!state.customer) return `<section class="wrap" style="max-width:760px"><div class="section-head"><span class="eyebrow">Checkout</span><h2>Sign in to place your order</h2></div><p class="empty">Your bag is saved. Sign in or create an account to continue with secure stock reservation and order tracking.</p><a class="cta" href="/account">Open account</a></section>`;
-  const subtotal = items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
-  return `<section class="wrap" style="max-width:760px">
-    <div class="section-head"><span class="eyebrow">Checkout</span><h2>Place your order</h2></div>
-    <form id="checkoutForm">
-      <label class="field">Name<input name="name" required></label>
-      <label class="field">Phone<input name="phone" type="tel" placeholder="+91 98765 43210" required></label>
-      <label class="field">Address<textarea name="address" rows="3" required></textarea></label>
-      <label class="field">City<input name="city" required></label>
-      <label class="field">Pincode<input name="pincode" required></label>
-      <div class="summary-box" style="margin-top:16px;padding:16px;border:1px solid rgba(0,0,0,.08);border-radius:16px;">
-        <p><strong>Items</strong></p>
-        ${items.map((item) => `<p>${esc(item.name)} × ${item.qty} — ${money(Number(item.price || 0) * Number(item.qty || 0))}</p>`).join("")}
-        <p><strong>Total</strong> <span style="float:right;">${money(subtotal)}</span></p>
-      </div>
-      <p id="checkoutMessage" class="empty" aria-live="polite"></p>
-      <button class="primary" type="submit" style="margin-top:16px;">Place order</button>
-      <button class="ghost" type="button" id="checkoutWhatsApp" style="margin-top:10px;">Continue on WhatsApp instead</button>
-    </form>
   </section>`;
 }
 
@@ -500,46 +482,6 @@ function bindBag() {
     const total = state.bag.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
     bagButton.onclick = () => openWhatsAppOrder(state.bag, total);
   }
-}
-
-function accountForm() {
-  return `<section class="wrap" style="max-width:720px">
-    <div class="section-head"><span class="eyebrow">Account</span><h2>Account</h2></div>
-    ${state.customer ? `<div class="summary-box" style="padding:20px;border:1px solid rgba(0,0,0,.08);border-radius:16px;"><h3>${esc(state.customer.name || "Customer")}</h3><p>${esc(state.customer.email || "")}${state.customer.phone ? ` · ${esc(state.customer.phone)}` : ""}</p><a class="cta" href="/orders">View my orders</a> <button class="ghost" id="logoutBtn" type="button">Sign out</button></div><form id="profileForm" style="margin-top:18px"><label class="field">Name<input name="name" value="${esc(state.customer.name || "")}" required></label><label class="field">Phone<input name="phone" value="${esc(state.customer.phone || "")}" required></label><button class="primary" type="submit">Save profile</button></form>` : `<div class="auth-grid"><form id="loginForm" class="summary-box"><h3>Sign in</h3><label class="field">Email or phone<input name="identifier" autocomplete="username" required></label><label class="field">Password<input name="password" type="password" autocomplete="current-password" required></label><button class="primary" type="submit">Sign in</button></form><form id="registerForm" class="summary-box"><h3>Create account</h3><label class="field">Name<input name="name" required></label><label class="field">Email<input name="email" type="email" autocomplete="email" required></label><label class="field">Phone<input name="phone" type="tel" autocomplete="tel"></label><label class="field">Password<input name="password" type="password" minlength="8" autocomplete="new-password" required></label><button class="primary" type="submit">Create account</button></form></div><p id="authMsg" class="empty" aria-live="polite">${esc(state.accountNotice)}</p>`}
-  </section>`;
-}
-
-function orderTimeline(order) {
-  const current = STATUSES.indexOf(order.orderStatus);
-  return `<div class="timeline">${STATUSES.map((s, i) => `<div class="tl"><span class="dot ${i <= current ? "done" : ""}"></span><div><strong>${s.replaceAll("_", " ")}</strong><br><small>${(order.statusHistory || []).filter((h) => h.status === s).map((h) => new Date(h.at).toLocaleString("en-IN")).join(" · ")}</small></div></div>`).join("")}</div>`;
-}
-
-function ordersBanner() {
-  const banners = (state.announcements || []).filter((item) => item.active !== false && item.text).sort((a, b) => Number(a.displayOrder || 0) - Number(b.displayOrder || 0));
-  if (!banners.length) return "";
-  const items = banners.map((item) => item.image
-    ? `<span class="orders-banner-image"><img src="${esc(item.image)}" alt="${esc(item.text)}"><b>${esc(item.text)}</b></span>`
-    : `<span>${esc(item.text)}</span>`).join("");
-  return `<div class="orders-banner"><div class="orders-banner-label">Live updates</div><div class="orders-marquee"><div class="orders-marquee-track">${items}${items}</div></div></div>`;
-}
-
-async function ordersPage() {
-  if (!state.customer) return `<section class="wrap" style="max-width:720px"><div class="section-head"><span class="eyebrow">Orders</span><h2>Sign in to track orders</h2></div><a class="cta" href="/account">Open account</a></section>`;
-  try {
-    const data = await api("/api/shop/orders");
-    const orders = data.orders || [];
-    return `<section class="wrap" style="max-width:760px"><div class="section-head"><span class="eyebrow">Orders</span><h2>My orders</h2></div>${orders.map((order) => `<article class="summary-box" style="margin-bottom:16px;padding:18px;border:1px solid rgba(0,0,0,.08);border-radius:16px;"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><strong>${esc(order.invoiceNumber)}</strong><strong>${money(order.totalAmount)}</strong></div><p>${new Date(order.createdAt).toLocaleString("en-IN")} · ${esc(order.paymentStatus)} · ${esc(order.paymentMode)}</p><p>${(order.items || []).map((item) => `${esc(item.name)} × ${item.qty}`).join(", ")}</p>${orderTimeline(order)}</article>`).join("") || '<p class="empty">No orders yet. Explore the collection to begin.</p>'}</section>`;
-  } catch (error) {
-    return `<section class="wrap" style="max-width:720px"><div class="section-head"><span class="eyebrow">Orders</span><h2>Orders unavailable</h2></div><p class="empty">${esc(error.message)}</p></section>`;
-  }
-}
-
-function startOrdersRefresh() {
-  clearInterval(state.ordersTimer);
-  if (path() !== "/orders" || !state.customer) return;
-  state.ordersTimer = setInterval(() => {
-    if (document.visibilityState === "visible" && path() === "/orders") renderRoute();
-  }, 15000);
 }
 
 async function staticPage(slug, fallbackTitle) {
@@ -599,6 +541,22 @@ function bindReveals() {
   sections.forEach((section) => observer.observe(section));
 }
 
+function bindHeroAtmosphere() {
+  const hero = document.querySelector(".hero");
+  if (!hero || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+  hero.addEventListener("pointermove", (event) => {
+    const bounds = hero.getBoundingClientRect();
+    const x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2;
+    const y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2;
+    hero.style.setProperty("--hero-x", `${(x * 7).toFixed(2)}px`);
+    hero.style.setProperty("--hero-y", `${(y * 5).toFixed(2)}px`);
+  }, { passive: true });
+  hero.addEventListener("pointerleave", () => {
+    hero.style.setProperty("--hero-x", "0px");
+    hero.style.setProperty("--hero-y", "0px");
+  }, { passive: true });
+}
+
 function bindPdp() {
   const p = productById(path().split("/").pop());
   if (!p) return;
@@ -618,88 +576,6 @@ function bindPdp() {
   $("#pAddBag")?.addEventListener("click", () => { addToBag(p._id, { size, color, qty: 1 }); });
 }
 
-function bindAuth() {
-  const msg = $("#authMsg");
-  const authResult = new URLSearchParams(location.search).get("auth");
-  if (msg && authResult === "google_failed") msg.textContent = "Google sign in could not be completed. Please try again.";
-  if (msg && authResult === "blocked") msg.textContent = "This account is blocked. Please contact the store.";
-  if (!state.customer && $("#googleSignIn")) {
-    fetch(apiUrl("/api/customer/google/status"), { credentials: "include" })
-      .then((response) => response.json())
-      .then((data) => { $("#googleSignIn").hidden = !data.configured; })
-      .catch(() => {});
-  }
-  if (!document.getElementById("loginForm") && !document.getElementById("registerForm") && !document.getElementById("otpRequestForm") && !document.getElementById("otpVerifyForm")) return;
-  $("#otpRequestForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const email = new FormData(e.target).get("email");
-    const sendButton = e.target.querySelector("button[type='submit']");
-    if (sendButton) { sendButton.disabled = true; sendButton.textContent = "Sending..."; }
-    try {
-      const data = await Promise.race([
-        api("/api/customer/email-otp/request", { method: "POST", body: JSON.stringify({ email }) }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("OTP request timed out. Check SMTP settings.")), 25000)),
-      ]);
-      $("#authMsg").textContent = data.demo ? `Demo OTP: ${data.demoOtp} — email service configured nahi hai.` : data.message;
-      $("#otpVerifyForm").hidden = false;
-      $("#otpVerifyForm").dataset.email = email;
-      if (data.demo) {
-        const otpInput = $("#otpVerifyForm input[name='otp']");
-        if (otpInput) { otpInput.value = data.demoOtp; otpInput.focus(); }
-      }
-    } catch (error) { if (msg) msg.textContent = error.message; }
-    finally { if (sendButton) { sendButton.disabled = false; sendButton.textContent = "Send OTP"; } }
-  });
-  $("#otpVerifyForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const otp = new FormData(e.target).get("otp");
-    try {
-      const data = await api("/api/customer/email-otp/verify", { method: "POST", body: JSON.stringify({ email: e.target.dataset.email, otp }) });
-      state.customer = data.customer;
-      state.accountNotice = "Signed in successfully.";
-      renderRoute();
-    } catch (error) { if (msg) msg.textContent = error.message; }
-  });
-  $("#loginForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    try {
-      const body = Object.fromEntries(new FormData(e.target));
-      const data = await api("/api/customer/login", { method: "POST", body: JSON.stringify(body) });
-      state.customer = data.customer;
-      state.accountNotice = "";
-      if (data.customer.wishlist) state.wishlist = new Set(data.customer.wishlist.map(String));
-      persist();
-      renderRoute();
-    } catch (error) { if (msg) msg.textContent = error.message; }
-  });
-  $("#registerForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    try {
-      const body = Object.fromEntries(new FormData(e.target));
-      const data = await api("/api/customer/register", { method: "POST", body: JSON.stringify(body) });
-      state.customer = data.customer;
-      state.accountNotice = "";
-      renderRoute();
-    } catch (error) { if (msg) msg.textContent = error.message; }
-  });
-  $("#profileForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const values = Object.fromEntries(new FormData(e.target));
-    try {
-      const data = await api("/api/customer/me", { method: "PUT", body: JSON.stringify({ name: values.name, phone: values.phone, addresses: [{ ...values, isDefault: true }] }) });
-      state.customer = data.customer;
-      state.accountNotice = "Profile saved.";
-      await renderRoute();
-    } catch (error) { if (msg) msg.textContent = error.message; }
-  });
-  $("#logoutBtn")?.addEventListener("click", async () => {
-    await api("/api/customer/logout", { method: "POST" });
-    state.customer = null;
-    state.accountNotice = "";
-    renderRoute();
-  });
-}
-
 async function renderRoute() {
   const route = path();
   const productId = route.startsWith("/product/") ? route.split("/").pop() : "";
@@ -712,9 +588,7 @@ async function renderRoute() {
   let html = "";
   if (route.startsWith("/product/")) html = pdp();
   else if (route === "/bag") html = bagPage();
-  else if (route === "/checkout") html = checkoutPage();
-  else if (route === "/account") html = accountForm();
-  else if (route === "/orders") html = await ordersPage();
+  else if (route === "/checkout" || route === "/account" || route === "/orders") html = bagPage();
   else if (route === "/contact") html = await staticPage("contact", "Contact us");
   else if (route === "/faqs") html = await staticPage("faqs", "FAQs");
   else if (route === "/legal") html = await staticPage("legal", "Legal");
@@ -723,35 +597,10 @@ async function renderRoute() {
   $("#app").innerHTML = html;
   bindCards();
   bindHero();
+  bindHeroAtmosphere();
   bindReveals();
   bindPdp();
   bindBag();
-  bindAuth();
-  startOrdersRefresh();
-  if (route === "/checkout") {
-    document.getElementById("checkoutForm")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const form = new FormData(e.target);
-      const values = Object.fromEntries(form.entries());
-      const submit = e.target.querySelector("button[type='submit']");
-      if (submit) { submit.disabled = true; submit.textContent = "Placing order..."; }
-      try {
-        const data = await api("/api/shop/checkout", { method: "POST", body: JSON.stringify({ items: state.bag, customer: values }) });
-        state.bag = [];
-        persistBag();
-        state.accountNotice = `Order ${data.invoiceNumber} placed successfully.`;
-        history.pushState({}, "", "/orders");
-        await renderRoute();
-      } catch (error) {
-        const message = document.getElementById("checkoutMessage");
-        if (message) message.textContent = error.message;
-      } finally { if (submit) { submit.disabled = false; submit.textContent = "Place order"; } }
-    });
-    document.getElementById("checkoutWhatsApp")?.addEventListener("click", () => {
-      const total = state.bag.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
-      openWhatsAppOrder(state.bag, total, Object.fromEntries(new FormData(document.getElementById("checkoutForm"))));
-    });
-  }
   document.querySelectorAll(".menu-nav a").forEach((a) => { a.onclick = () => { $("#menu").hidden = true; }; });
 }
 
@@ -804,12 +653,12 @@ function setupChrome() {
 }
 
 async function boot() {
+  startCinematicIntro();
   try {
-    const [home, catalog, settings, me] = await Promise.all([
+    const [home, catalog, settings] = await Promise.all([
       api("/api/content/homepage"),
       api("/api/shop/catalog"),
       api("/api/shop/settings"),
-      fetch(apiUrl("/api/customer/me"), { credentials: "include" }).then((r) => r.json()).catch(() => ({})),
     ]);
     state.sections = home.sections || [];
     state.announcements = home.announcements || [];
@@ -818,10 +667,6 @@ async function boot() {
     state.brands = catalog.brands || home.brands || [];
     state.settings = settings.settings || state.settings;
     applyStoreSettings();
-    if (me.customer) {
-      state.customer = me.customer;
-      if (me.customer.wishlist?.length) state.wishlist = new Set(me.customer.wishlist.map(String));
-    }
   } catch (_e) {
     $("#app").innerHTML = `<div class="state">The collection is temporarily unavailable.</div>`;
     setupChrome();
