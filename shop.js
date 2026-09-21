@@ -224,7 +224,7 @@ function openOverlay(id) {
 function productCard(p, options = {}) {
   const available = Number(p.stock || 0) > 0;
   const images = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
-  return `<article class="product${options.lead ? " product--lead" : ""}">
+  return `<article class="product${options.lead ? " product--lead" : ""}" style="--card-index:${Number(options.index || 0)}">
     <div class="product-media">
       <span class="badge">${p.newArrival ? "New arrival" : esc(p.category || "Edit")}</span>
       <button class="heart" data-wish="${p._id}" aria-label="Favourite">${state.wishlist.has(p._id) ? "♥" : "♡"}</button>
@@ -348,30 +348,30 @@ function renderSection(section) {
   if (["HERO", "HERO_CAMPAIGN"].includes(type)) return "";
   if (["CATEGORIES", "CATEGORY_SHOWCASE"].includes(type)) {
     const cats = state.categories.length ? state.categories : [...new Set(state.products.map((p) => p.category).filter(Boolean))].map((name) => ({ name }));
-    return `<section class="wrap reveal-section"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "Shop by world")}</span><h2>${esc(section.title || "Categories")}</h2>${section.description ? `<p class="section-note">${esc(section.description)}</p>` : ""}</div>
+      return `<section class="wrap reveal-section cinematic-section section-categories" data-motion="categories"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "Shop by world")}</span><h2>${esc(section.title || "Categories")}</h2>${section.description ? `<p class="section-note">${esc(section.description)}</p>` : ""}</div>
       <div class="scroller">${cats.map((c, index) => `<a class="scroller-item" href="/shop?category=${encodeURIComponent(c.name)}" style="background-image:linear-gradient(140deg,#300a18cc,#751b3566),url('${esc(c.image || "")}')"><span class="category-index">0${index + 1}</span><h3>${esc(c.name)}</h3><span class="category-arrow">↗</span></a>`).join("")}</div></section>`;
   }
   if (type === "BRANDS") {
-    return `<section class="wrap"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "Houses we keep")}</span><h2>${esc(section.title || "Brands")}</h2></div>
+     return `<section class="wrap cinematic-section section-brands" data-motion="brands"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "Houses we keep")}</span><h2>${esc(section.title || "Brands")}</h2></div>
       <div class="scroller">${(state.brands.length ? state.brands : []).map((b) => `<div class="brand-chip">${b.logo ? `<img src="${esc(b.logo)}" alt="${esc(b.name)}">` : ""}<strong>${esc(b.name)}</strong></div>`).join("") || '<p class="empty">Brands will appear once added in admin.</p>'}</div></section>`;
   }
   if (["FULL_WIDTH_BANNER"].includes(type)) {
-    return `<section class="banner" style="background-image:linear-gradient(#1c181466,#1c181488),url('${esc(section.image || "")}')"><div><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2><p>${esc(section.description)}</p>${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
+     return `<section class="banner cinematic-section section-banner" data-motion="banner" style="background-image:linear-gradient(#1c181466,#1c181488),url('${esc(section.image || "")}')"><div><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2><p>${esc(section.description)}</p>${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
   }
   if (["EDITORIAL", "EDITORIAL_STORY", "SPLIT_STORY", "BRAND_STORY", "COLLECTION"].includes(type)) {
-    return `<section class="editorial"><div class="editorial-media" style="background-image:url('${esc(section.image || "")}')"></div><div class="editorial-copy"><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2><p>${esc(section.description)}</p>${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}" style="color:var(--ink);border-color:var(--ink)">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
+     return `<section class="editorial cinematic-section section-editorial" data-motion="editorial"><div class="editorial-media" style="background-image:url('${esc(section.image || "")}')"></div><div class="editorial-copy"><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2><p>${esc(section.description)}</p>${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}" style="color:var(--ink);border-color:var(--ink)">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
   }
   if (type === "LOOKBOOK") {
-    return `<section class="wrap"><div class="section-head"><h2>${esc(section.title || "Lookbook")}</h2></div>
+    return `<section class="wrap cinematic-section section-lookbook" data-motion="lookbook"><div class="section-head"><h2>${esc(section.title || "Lookbook")}</h2></div>
       <div class="lookbook"><div class="look tall" style="background-image:linear-gradient(#1c181466,#1c181488),url('${esc(section.image || "")}')"><h3>${esc(section.title)}</h3></div>
       <div class="look" style="background-image:linear-gradient(#1c181466,#1c181488),url('${esc(section.mobileImage || section.image || "")}')"><p>${esc(section.description)}</p></div></div></section>`;
   }
-  if (["PROMO_STRIP", "PROMOTIONAL_STRIP"].includes(type)) return `<div class="promo-strip">${esc(section.title || section.description)}</div>`;
-  if (type === "VIDEO") return videoBlock(section);
+  if (["PROMO_STRIP", "PROMOTIONAL_STRIP"].includes(type)) return `<div class="promo-strip cinematic-section section-promo" data-motion="promo">${esc(section.title || section.description)}</div>`;
+  if (type === "VIDEO") return videoBlock(section).replace('<section class="wrap">', '<section class="wrap cinematic-section section-video" data-motion="video">');
   const items = productsForSection(section);
   const grid = ["PRODUCT_GRID", "FEATURED"].includes(type);
-  return `<section class="wrap reveal-section"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "From the catalogue")}</span><h2>${esc(section.title || type.replaceAll("_", " "))}</h2>${section.description ? `<p class="section-note">${esc(section.description)}</p>` : ""}</div>
-    <div class="${grid ? "product-grid" : "rail"}">${items.map((item, index) => productCard(item, { lead: grid && index === 0 })).join("") || '<p class="empty">No products in this edit yet.</p>'}</div></section>`;
+  return `<section class="wrap reveal-section cinematic-section section-products section-${type.toLowerCase()}" data-motion="products"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "From the catalogue")}</span><h2>${esc(section.title || type.replaceAll("_", " "))}</h2>${section.description ? `<p class="section-note">${esc(section.description)}</p>` : ""}</div>
+    <div class="${grid ? "product-grid" : "rail"}">${items.map((item, index) => productCard(item, { lead: grid && index === 0, index })).join("") || '<p class="empty">No products in this edit yet.</p>'}</div></section>`;
 }
 
 function homepage() {
@@ -557,6 +557,94 @@ function bindHeroAtmosphere() {
   }, { passive: true });
 }
 
+function bindCinematicScroll() {
+  if (document.documentElement.dataset.cinematicScrollBound === "true") return;
+  document.documentElement.dataset.cinematicScrollBound = "true";
+  let frame = 0;
+  const update = () => {
+    frame = 0;
+    document.documentElement.style.setProperty("--scroll-progress", `${window.scrollY}px`);
+  };
+  window.addEventListener("scroll", () => {
+    if (!frame) frame = window.requestAnimationFrame(update);
+  }, { passive: true });
+  update();
+}
+
+function bindAmbientCanvas() {
+  const canvas = document.getElementById("ambientCanvas");
+  if (!canvas || canvas.dataset.bound === "true") return;
+  canvas.dataset.bound = "true";
+  const context = canvas.getContext("2d", { alpha: true });
+  if (!context) return;
+  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const lowPower = Number(navigator.hardwareConcurrency || 4) <= 2 || Number(navigator.deviceMemory || 4) <= 2;
+  const particleCount = reduced ? 0 : lowPower ? 18 : 34;
+  const particles = Array.from({ length: particleCount }, (_, index) => ({
+    seed: index * 1.73,
+    x: Math.random(),
+    y: Math.random(),
+    size: 0.7 + Math.random() * 1.8,
+    speed: 0.00008 + Math.random() * 0.00013,
+  }));
+  let width = 0;
+  let height = 0;
+  let frame = 0;
+  let active = !document.hidden;
+
+  const resize = () => {
+    const ratio = Math.min(window.devicePixelRatio || 1, lowPower ? 1 : 1.5);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * ratio);
+    canvas.height = Math.floor(height * ratio);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+  };
+  const draw = (time) => {
+    frame = 0;
+    if (!active) return;
+    context.clearRect(0, 0, width, height);
+    const motion = reduced ? 0 : time;
+    const ribbonY = height * 0.42 + Math.sin(motion * 0.00012) * height * 0.06;
+    const ribbon = context.createLinearGradient(0, ribbonY - height * 0.22, width, ribbonY + height * 0.22);
+    ribbon.addColorStop(0, "rgba(61, 16, 28, 0)");
+    ribbon.addColorStop(0.48, "rgba(117, 27, 53, 0.08)");
+    ribbon.addColorStop(0.56, "rgba(201, 157, 79, 0.07)");
+    ribbon.addColorStop(1, "rgba(61, 16, 28, 0)");
+    context.fillStyle = ribbon;
+    context.beginPath();
+    context.moveTo(-width * 0.1, ribbonY);
+    context.bezierCurveTo(width * 0.26, ribbonY - height * 0.2, width * 0.58, ribbonY + height * 0.2, width * 1.1, ribbonY - height * 0.04);
+    context.lineTo(width * 1.1, ribbonY + height * 0.18);
+    context.bezierCurveTo(width * 0.55, ribbonY + height * 0.3, width * 0.25, ribbonY - height * 0.1, -width * 0.1, ribbonY + height * 0.16);
+    context.closePath();
+    context.fill();
+    particles.forEach((particle) => {
+      particle.y -= particle.speed * 16;
+      if (particle.y < -0.02) particle.y = 1.02;
+      const x = particle.x * width + Math.sin(motion * 0.0003 + particle.seed) * 18;
+      const y = particle.y * height;
+      const alpha = 0.16 + (Math.sin(motion * 0.001 + particle.seed) + 1) * 0.08;
+      context.fillStyle = `rgba(201, 157, 79, ${alpha.toFixed(3)})`;
+      context.beginPath();
+      context.arc(x, y, particle.size, 0, Math.PI * 2);
+      context.fill();
+    });
+    if (!reduced) frame = window.requestAnimationFrame(draw);
+  };
+  const requestDraw = () => { if (!frame && active && !reduced) frame = window.requestAnimationFrame(draw); };
+  resize();
+  window.addEventListener("resize", resize, { passive: true });
+  document.addEventListener("visibilitychange", () => {
+    active = !document.hidden;
+    if (active) requestDraw();
+  });
+  if (reduced) draw(0);
+  else requestDraw();
+}
+
 function bindPdp() {
   const p = productById(path().split("/").pop());
   if (!p) return;
@@ -598,6 +686,7 @@ async function renderRoute() {
   bindCards();
   bindHero();
   bindHeroAtmosphere();
+  bindCinematicScroll();
   bindReveals();
   bindPdp();
   bindBag();
@@ -605,6 +694,7 @@ async function renderRoute() {
 }
 
 function setupChrome() {
+  bindAmbientCanvas();
   $("#menuOpen").onclick = () => { $("#menu").hidden = false; };
   const backHome = $("#backHome");
   if (backHome) {
