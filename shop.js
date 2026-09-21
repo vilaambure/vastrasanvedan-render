@@ -114,6 +114,41 @@ function img(src) {
 function productById(id) { return state.products.find((p) => p._id === id); }
 function path() { return location.pathname.replace(/\/$/, "") || "/"; }
 
+function productShareUrl(productId) {
+  const id = String(productId || "").trim();
+  if (!id) return "";
+  const origin = typeof window !== "undefined" && window.location?.origin ? window.location.origin : "https://example.com";
+  return new URL(`/product/${encodeURIComponent(id)}`, origin).href;
+}
+
+function updateOpenGraphMeta(product = null) {
+  const storeName = state.settings?.storeName || "Vastra Sanvedan";
+  const tagline = state.settings?.tagline || "Clothes with a point of view.";
+  const title = product ? `${product.name} | ${storeName}` : `${storeName} | Store`;
+  const description = product ? (product.description || `${product.name} — ${money(product.sellingPrice || 0)} at ${storeName}.`) : tagline;
+  const image = product && Array.isArray(product.images) && product.images.length ? img(product.images[0]) : "";
+  const tags = [
+    ["property", "og:title", title],
+    ["property", "og:description", description],
+    ["property", "og:type", "website"],
+    ["property", "og:image", image || ""],
+    ["name", "twitter:card", image ? "summary_large_image" : "summary"],
+    ["name", "twitter:title", title],
+    ["name", "twitter:description", description],
+    ["name", "twitter:image", image || ""],
+  ];
+  tags.forEach(([attrName, key, value]) => {
+    if (!value) return;
+    let tag = document.head.querySelector(`${attrName === "property" ? "meta[property='" : "meta[name='"}${key}${attrName === "property" ? "']" : "']"}`);
+    if (!tag) {
+      tag = document.createElement("meta");
+      tag.setAttribute(attrName, key);
+      document.head.appendChild(tag);
+    }
+    tag.setAttribute("content", value);
+  });
+}
+
 function whatsappNumber(raw = "") {
   const digits = String(raw || "").replace(/\D/g, "");
   if (!digits) return "";
@@ -127,9 +162,12 @@ function buildWhatsAppUrl(items = [], total = 0, customer = {}) {
   const phone = whatsappNumber(state.settings?.contactPhone || "+91 99999 99999");
   if (!phone) return "";
   const productLines = items.map((item) => {
-    const imageSource = item.image || productById(item.productId)?.images?.[0] || "";
+    const product = productById(item.productId);
+    const imageSource = item.image || product?.images?.[0] || "";
     const imageUrl = imageSource ? new URL(img(imageSource), window.location.origin).href : "";
-    return `${item.name}${item.size ? ` • ${item.size}` : ""} • ${item.color || "Signature"} • ${item.qty} × ${money(item.price || 0)}${imageUrl ? `\nImage: ${imageUrl}` : ""}`;
+    const productUrl = item.productId ? productShareUrl(item.productId) : "";
+    const productDetails = `${item.name}${item.size ? ` • ${item.size}` : ""} • ${item.color || "Signature"} • ${item.qty} × ${money(item.price || 0)}`;
+    return `${productDetails}${productUrl ? `\nProduct: ${productUrl}` : ""}${imageUrl ? `\nImage: ${imageUrl}` : ""}`;
   }).join("\n");
   const customerInfo = customer.name || customer.phone || customer.address ? `\nCustomer: ${customer.name || ""}${customer.phone ? `\nPhone: ${customer.phone}` : ""}${customer.address ? `\nAddress: ${customer.address}${customer.city ? `, ${customer.city}` : ""}${customer.pincode ? `, ${customer.pincode}` : ""}` : ""}` : "";
   const template = state.settings?.whatsappMessage || "Hello Vastra Sanvedan,\nI want to order:\n{productLines}\n\nTotal: {total}{customerInfo}\n\nPlease confirm availability and delivery details.";
@@ -645,7 +683,10 @@ function bindAuth() {
 
 async function renderRoute() {
   const route = path();
+  const productId = route.startsWith("/product/") ? route.split("/").pop() : "";
+  const product = productId ? productById(productId) : null;
   applyStoreSettings();
+  updateOpenGraphMeta(product);
   const promoText = state.announcements[0]?.text || state.settings?.announcementText || "Vastra Sanvedan — one collection, online and in-store";
   const promo = document.getElementById("promo");
   if (promo) promo.textContent = promoText;
