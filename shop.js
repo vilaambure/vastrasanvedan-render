@@ -32,6 +32,13 @@ const state = {
 const $ = (sel) => document.querySelector(sel);
 const money = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 const fallback = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000"><rect fill="#e7dfd4" width="800" height="1000"/><text x="50%" y="50%" fill="#7b7369" font-size="28" text-anchor="middle" font-family="serif">Vastra Sanvedan</text></svg>');
+const campaignAssets = [
+  "/uploads/1788786450969-5d6b9e8eddd2.jpg",
+  "/uploads/1788786558145-5c29972ccb4a.jpg",
+  "/uploads/1788786632896-9cd3d21c482d.jpg",
+  "/uploads/1788786718260-560f0bdb8f8f.jpg",
+  "/uploads/1788934467395-eb60889f60b8.jpg",
+];
 const productSizes = (product) => Array.isArray(product?.sizes) ? product.sizes.filter(Boolean) : [];
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]));
 const STATUSES = ["PLACED", "CONFIRMED", "PACKING", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"];
@@ -126,6 +133,12 @@ function img(src) {
 }
 function productById(id) { return state.products.find((p) => p._id === id); }
 function path() { return location.pathname.replace(/\/$/, "") || "/"; }
+function campaignImage(source, index = 0) {
+  return source && !/^https?:\/\//i.test(source) ? source : campaignAssets[index % campaignAssets.length];
+}
+function productImage(product, index = 0) {
+  return product?.images?.[0] || campaignAssets[index % campaignAssets.length];
+}
 
 function productShareUrl(productId) {
   const id = String(productId || "").trim();
@@ -333,14 +346,52 @@ function renderHero() {
   return `<section class="hero" id="hero">
     ${slides.map((s, idx) => `<div class="hero-slide ${idx === i ? "active" : ""}">
       <picture>
-        <source media="(max-width: 700px)" srcset="${esc(s.mobileImage || s.image || fallback)}">
-        <img src="${esc(s.image || fallback)}" alt="${esc(s.title)}">
+        <source media="(max-width: 700px)" srcset="${esc(campaignImage(s.mobileImage || s.image, idx + 1))}">
+        <img src="${esc(campaignImage(s.image, idx))}" alt="${esc(s.title)}" onerror="this.src='${campaignAssets[idx % campaignAssets.length]}'">
       </picture>
       ${s.videoUrl && idx === i ? `<video autoplay muted loop playsinline poster="${esc(s.posterImage || s.mobileImage || "")}" src="${esc(s.videoUrl)}"></video>` : ""}
       <span class="hero-vfx" aria-hidden="true"><i></i><i></i><i></i></span><div class="hero-copy"><span class="eyebrow">${esc(s.subtitle || "Vastra Sanvedan / 01")}</span><h1>${esc(s.title || "The season, considered.")}</h1><p>${esc(s.description || "")}</p>${s.ctaLabel ? `<a class="cta" href="${esc(s.ctaUrl || "/shop")}">${esc(s.ctaLabel)}</a>` : `<a class="cta" href="/shop">Enter the collection</a>`}</div><span class="hero-caption">${String(idx + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}<br>Vastra Sanvedan</span>
     </div>`).join("")}
     <div class="hero-nav">${slides.map((_, idx) => `<button class="${idx === i ? "active" : ""}" data-hero="${idx}" aria-label="Slide ${idx + 1}"></button>`).join("")}</div>
   </section>`;
+}
+
+function campaignCategories() {
+  const desired = ["Women", "Men", "Kurta Sets", "Sarees", "Lehenga", "Dupatta", "Accessories"];
+  return desired.map((label, index) => {
+    const match = state.categories.find((category) => {
+      const name = String(category.name || "").toLowerCase();
+      return name === label.toLowerCase() || name.includes(label.split(" ")[0].toLowerCase());
+    });
+    const product = state.products.find((item) => `${item.name} ${item.category}`.toLowerCase().includes(label.split(" ")[0].toLowerCase()));
+    return {
+      label,
+      href: match ? `/shop?category=${encodeURIComponent(match.name)}` : product?.category ? `/shop?category=${encodeURIComponent(product.category)}` : "/shop",
+      image: campaignImage(match?.image || productImage(product, index), index),
+      glyph: ["W", "M", "K", "S", "L", "D", "A"][index],
+    };
+  });
+}
+
+function renderCampaignCategories() {
+  return `<section class="campaign-categories cinematic-section" id="categories">
+    <div class="campaign-section-heading"><span class="eyebrow">The house edit</span><h2>Find your expression</h2><p>Pieces shaped by tradition, finished for the way you live now.</p></div>
+    <div class="category-orbit-rail">${campaignCategories().map((category, index) => `<a class="category-orb" href="${esc(category.href)}" style="--category-image:url('${esc(category.image)}');--category-index:${index}"><span class="category-orb-image"><span>${category.glyph}</span></span><strong>${esc(category.label)}</strong><small>Explore</small></a>`).join("")}</div>
+  </section>`;
+}
+
+function renderCampaignCollection() {
+  const items = state.products.slice(0, 4);
+  const labels = ["New arrivals", "Men's collection", "Festive edit", "Traditional picks"];
+  return `<section class="campaign-collection cinematic-section" id="featured-collection">
+    <div class="collection-copy"><span class="eyebrow">Featured collection</span><h2>Handcrafted<br><em>with Heart</em></h2><p>Every piece tells a story of tradition, craftsmanship and considered beauty.</p><a class="cta" href="/shop">Shop now <span aria-hidden="true">→</span></a></div>
+    <div class="collection-mosaic">${items.map((item, index) => `<a class="collection-tile collection-tile-${index + 1}" href="/product/${item._id}"><img src="${esc(img(productImage(item, index)))}" alt="${esc(item.name)}" loading="lazy"><span class="collection-tile-shade"></span><span class="collection-tile-copy"><small>${String(index + 1).padStart(2, "0")}</small><strong>${labels[index]}</strong><em>Shop now →</em></span></a>`).join("")}</div>
+  </section>`;
+}
+
+function renderBrandPromise() {
+  const image = campaignAssets[3];
+  return `<section class="brand-promise cinematic-section"><div class="brand-promise-image" style="background-image:url('${image}')"></div><div class="brand-promise-copy"><span class="eyebrow">Our promise</span><h2>Authentic <i>•</i> Elegant <i>•</i> You</h2><p>Style that feels like you.</p></div></section>`;
 }
 
 function videoBlock(section) {
@@ -364,14 +415,14 @@ function renderSection(section) {
       <div class="scroller">${cats.map((c, index) => `<a class="scroller-item" href="/shop?category=${encodeURIComponent(c.name)}" style="background-image:linear-gradient(140deg,#300a18cc,#751b3566),url('${esc(c.image || "")}')"><span class="category-index">0${index + 1}</span><h3>${esc(c.name)}</h3><span class="category-arrow">↗</span></a>`).join("")}</div></section>`;
   }
   if (type === "BRANDS") {
-     return `<section class="wrap cinematic-section section-brands" data-motion="brands"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "Houses we keep")}</span><h2>${esc(section.title || "Brands")}</h2></div>
-      <div class="scroller">${(state.brands.length ? state.brands : []).map((b) => `<div class="brand-chip">${b.logo ? `<img src="${esc(b.logo)}" alt="${esc(b.name)}">` : ""}<strong>${esc(b.name)}</strong></div>`).join("") || '<p class="empty">Brands will appear once added in admin.</p>'}</div></section>`;
+     return `<section class="wrap cinematic-section section-brands" id="brands" data-motion="brands"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "Houses we keep")}</span><h2>${esc(section.title || "Brands")}</h2></div>
+      <div class="scroller">${(state.brands.length ? state.brands : []).map((b, index) => `<div class="brand-chip">${b.logo ? `<img src="${esc(campaignImage(b.logo, index))}" alt="${esc(b.name)}" onerror="this.src='${campaignAssets[index % campaignAssets.length]}'">` : ""}<strong>${esc(b.name)}</strong></div>`).join("") || '<p class="empty">Brands will appear once added in admin.</p>'}</div></section>`;
   }
   if (["FULL_WIDTH_BANNER"].includes(type)) {
      return `<section class="banner cinematic-section section-banner" data-motion="banner" style="background-image:linear-gradient(#1c181466,#1c181488),url('${esc(section.image || "")}')"><div><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2><p>${esc(section.description)}</p>${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
   }
   if (["EDITORIAL", "EDITORIAL_STORY", "SPLIT_STORY", "BRAND_STORY", "COLLECTION"].includes(type)) {
-     return `<section class="editorial cinematic-section section-editorial" data-motion="editorial"><div class="editorial-media" style="background-image:url('${esc(section.image || "")}')"></div><div class="editorial-copy"><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2><p>${esc(section.description)}</p>${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}" style="color:var(--ink);border-color:var(--ink)">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
+    return `<section class="editorial cinematic-section section-editorial" data-motion="editorial"><div class="editorial-media" style="background-image:url('${esc(campaignImage(section.image, 2))}')"></div><div class="editorial-copy"><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2><p>${esc(section.description)}</p>${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}" style="color:var(--ink);border-color:var(--ink)">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
   }
   if (type === "LOOKBOOK") {
     return `<section class="wrap cinematic-section section-lookbook" data-motion="lookbook"><div class="section-head"><h2>${esc(section.title || "Lookbook")}</h2></div>
@@ -388,9 +439,8 @@ function renderSection(section) {
 
 function homepage() {
   const ordered = [...state.sections].sort((a, b) => a.displayOrder - b.displayOrder);
-  const body = ordered.length
-    ? renderHero() + ordered.map(renderSection).join("")
-    : renderHero() + renderSection({ type: "CATEGORIES", title: "Categories" }) + renderSection({ type: "NEW_ARRIVALS", title: "New arrivals" }) + renderSection({ type: "LOWEST_PRICE", title: "Lowest price" }) + renderSection({ type: "PRODUCT_GRID", title: "The full edit" });
+  const nonHero = ordered.filter((section) => !["HERO", "HERO_CAMPAIGN", "CATEGORIES", "FULL_WIDTH_BANNER"].includes(section.type));
+  const body = renderHero() + renderCampaignCategories() + renderCampaignCollection() + (nonHero.length ? nonHero.map(renderSection).join("") : renderSection({ type: "NEW_ARRIVALS", title: "New arrivals" }) + renderSection({ type: "PRODUCT_GRID", title: "The full edit" })) + renderBrandPromise();
   return body;
 }
 
@@ -732,6 +782,8 @@ function setupChrome() {
     bagButton.id = "bagButton";
     headerRight.appendChild(bagButton);
   }
+  const floatingWhatsApp = document.getElementById("floatingWhatsApp");
+  if (floatingWhatsApp) floatingWhatsApp.onclick = () => openWhatsAppOrder(state.bag);
   $("#modal").onclick = (e) => { if (e.target.id === "modal") closeOverlays(); };
   window.addEventListener("scroll", () => $("#header").classList.toggle("scrolled", scrollY > 12));
   $("#filterCategory").innerHTML = `<option value="">All categories</option>` + [...new Set(state.products.map((p) => p.category))].map((c) => `<option>${esc(c)}</option>`).join("");
