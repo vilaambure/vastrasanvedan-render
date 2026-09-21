@@ -260,7 +260,6 @@ function renderHero() {
         <source media="(max-width: 700px)" srcset="${esc(s.mobileImage || s.image || fallback)}">
         <img src="${esc(s.image || fallback)}" alt="${esc(s.title)}">
       </picture>
-      ${s.videoUrl && idx === i ? `<video autoplay muted loop playsinline poster="${esc(s.posterImage || s.mobileImage || "")}" src="${esc(s.videoUrl)}"></video>` : ""}
       <div class="hero-copy"><span class="eyebrow">${esc(s.subtitle || "Vastra Sanvedan")}</span><h1>${esc(s.title || "The season, considered.")}</h1><p>${esc(s.description || "")}</p>${s.ctaLabel ? `<a class="cta" href="${esc(s.ctaUrl || "/shop")}">${esc(s.ctaLabel)}</a>` : ""}</div>
     </div>`).join("")}
     <div class="hero-nav">${slides.map((_, idx) => `<button class="${idx === i ? "active" : ""}" data-hero="${idx}" aria-label="Slide ${idx + 1}"></button>`).join("")}</div>
