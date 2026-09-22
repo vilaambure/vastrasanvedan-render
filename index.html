@@ -312,6 +312,7 @@
       }
 
       .product-detail-card.empty { display: block; color: var(--muted); }
+      .product-detail-image { width: 76px; height: 96px; float: left; margin: 0 14px 8px 0; border-radius: 12px; object-fit: cover; border: 1px solid var(--line); }
       .product-detail-title { margin: 0 0 5px; font-size: 1.15rem; }
       .product-detail-meta { display: flex; flex-wrap: wrap; gap: 8px 14px; color: var(--muted); font-size: 0.82rem; }
       .product-detail-meta strong { color: var(--ink); }
@@ -846,6 +847,27 @@
 
       .print-area { display: none; }
 
+      body.theme-dark {
+        --bg: #101827;
+        --bg-strong: #172238;
+        --panel: rgba(25, 37, 58, 0.94);
+        --panel-strong: #1d2a42;
+        --surface: #17243a;
+        --soft: #223451;
+        --ink: #edf3ff;
+        --muted: #aab8cf;
+        --line: #304563;
+        --shadow: 0 22px 52px rgba(0, 0, 0, 0.28);
+        background: linear-gradient(180deg, #101827 0%, #152238 100%);
+      }
+      body.theme-dark input, body.theme-dark select, body.theme-dark textarea,
+      body.theme-dark .product-detail-card, body.theme-dark .cart-table th,
+      body.theme-dark .analytics-panel, body.theme-dark .mini-panel,
+      body.theme-dark .report-card, body.theme-dark .stat-card { background: #1d2a42; color: var(--ink); }
+      body.theme-dark .cart-table th, body.theme-dark .inventory-item, body.theme-dark .cash-item,
+      body.theme-dark .transaction-item { background: #17243a; }
+      body.theme-dark .theme-toggle { background: #273a5b; color: #f7d986; border-color: #466183; }
+
       @media print {
         body * { visibility: hidden; }
         .print-area, .print-area * { visibility: visible; }
@@ -896,6 +918,7 @@
               Upload Shop Banner
               <input id="bannerUpload" type="file" accept="image/*" />
             </label>
+            <button id="themeToggleBtn" class="back-to-website theme-toggle" type="button" aria-label="Toggle POS theme">Dark mode</button>
             <div class="status-pill" id="networkStatus">Online</div>
           </div>
         </div>
@@ -1028,6 +1051,7 @@
             <div class="stacked-actions">
               <button id="generateBillBtn" class="btn btn-success">Generate Bill</button>
               <button id="resetBillBtn" class="btn btn-danger">Reset / New Bill</button>
+              <button id="lastBillBtn" class="btn btn-primary" type="button" style="display:none;">View Last Bill</button>
               <button id="printBillBtn" class="btn btn-warning" style="display:none;">Print Invoice</button>
             </div>
           </div>
@@ -1197,6 +1221,8 @@
       const STORAGE_INVENTORY = 'vastrasanvedan_inventory_v1';
       const STORAGE_CASH_TILL = 'vastrasanvedan_cash_till_v1';
       const STORAGE_RECEIPT_SETTINGS = 'vastrasanvedan_receipt_settings_v1';
+      const STORAGE_CUSTOMER = 'vastrasanvedan_last_customer_v1';
+      const STORAGE_THEME = 'vastrasanvedan_pos_theme_v1';
 
       const monthNames = [
         'January', 'February', 'March', 'April', 'May', 'June',
@@ -1270,7 +1296,9 @@
         addToCartBtn: document.getElementById('addToCartBtn'),
         generateBillBtn: document.getElementById('generateBillBtn'),
         resetBillBtn: document.getElementById('resetBillBtn'),
+        lastBillBtn: document.getElementById('lastBillBtn'),
         printBillBtn: document.getElementById('printBillBtn'),
+        themeToggleBtn: document.getElementById('themeToggleBtn'),
         toast: document.getElementById('toast'),
         inventoryList: document.getElementById('inventoryList'),
         cashTillList: document.getElementById('cashTillList'),
@@ -1313,6 +1341,28 @@
 
       function escapeReceiptText(value) {
         return String(value || '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+      }
+
+      function loadPosPreferences() {
+        try {
+          const customer = JSON.parse(localStorage.getItem(STORAGE_CUSTOMER) || 'null');
+          if (customer) {
+            elements.customerName.value = customer.name || '';
+            elements.phoneNumber.value = customer.phone || '';
+          }
+        } catch (error) {
+          // Ignore malformed local preferences and keep the form usable.
+        }
+        const dark = localStorage.getItem(STORAGE_THEME) === 'dark';
+        document.body.classList.toggle('theme-dark', dark);
+        elements.themeToggleBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+      }
+
+      function togglePosTheme() {
+        const dark = !document.body.classList.contains('theme-dark');
+        document.body.classList.toggle('theme-dark', dark);
+        localStorage.setItem(STORAGE_THEME, dark ? 'dark' : 'light');
+        elements.themeToggleBtn.textContent = dark ? 'Light mode' : 'Dark mode';
       }
 
       async function loadReceiptSettings() {
@@ -1561,6 +1611,7 @@
         }
         elements.productDetailCard.className = 'product-detail-card';
         elements.productDetailText.innerHTML = `
+          ${product.images?.[0] ? `<img class="product-detail-image" src="${escapeHtml(product.images[0])}" alt="${escapeHtml(product.name)}" onerror="this.remove()" />` : ''}
           <h4 class="product-detail-title">${escapeHtml(product.name)}</h4>
           <div class="product-detail-meta">
             <span>Barcode: <strong>${escapeHtml(product.barcode || 'Not assigned')}</strong></span>
@@ -2063,6 +2114,7 @@
         renderProductDetails(null);
         lastInvoice = null;
         elements.invoicePrintArea.innerHTML = '';
+        elements.lastBillBtn.style.display = salesLedger.length ? 'inline-block' : 'none';
         elements.printBillBtn.style.display = 'none';
         closeUpiModal();
         renderCart();
@@ -2097,6 +2149,8 @@
           }))
         };
 
+        localStorage.setItem(STORAGE_CUSTOMER, JSON.stringify({ name: customerName, phone: phoneNumber }));
+
         updateInventoryAfterSale(cart);
         appendToLedger(lastInvoice);
         renderHistoryLedger();
@@ -2107,6 +2161,7 @@
         renderAnalytics();
 
         elements.invoicePrintArea.innerHTML = generateReceiptMarkup(lastInvoice);
+        elements.lastBillBtn.style.display = 'inline-block';
         elements.printBillBtn.style.display = 'inline-block';
         setToast('Bill generated successfully.', 'success');
         syncPosOrder(lastInvoice);
@@ -2121,6 +2176,28 @@
         }
         closeUpiModal();
         window.print();
+      }
+
+      function viewLastBill() {
+        const entry = salesLedger[0];
+        if (!entry) return setToast('No previous bill found on this device.', 'error');
+        lastInvoice = {
+          invoiceNumber: entry.invoiceNumber,
+          customerName: entry.customerName,
+          phoneNumber: entry.phoneNumber,
+          paymentMode: entry.paymentMode,
+          totalAmount: entry.totalAmount,
+          items: (entry.items || []).map((item) => ({
+            productName: item.productName || item.name,
+            size: item.size || '',
+            quantity: item.quantity || item.qty || 1,
+            unitPrice: item.unitPrice || item.price || 0,
+            totalAmount: item.totalAmount || 0
+          }))
+        };
+        elements.invoicePrintArea.innerHTML = generateReceiptMarkup(lastInvoice);
+        elements.printBillBtn.style.display = 'inline-block';
+        setToast(`${lastInvoice.invoiceNumber} loaded.`, 'success');
       }
 
       function applyThemeFromImage(file) {
@@ -2170,6 +2247,7 @@
       }
 
       async function boot() {
+        loadPosPreferences();
         loadLocalReceiptSettings();
         await loadReceiptSettings();
         loadLocalReceiptSettings();
@@ -2184,6 +2262,7 @@
         renderYearSelector();
         renderAnalytics();
         renderMonthTabs();
+        elements.lastBillBtn.style.display = salesLedger.length ? 'inline-block' : 'none';
         elements.shopBanner.style.backgroundImage = 'linear-gradient(135deg, rgba(28, 42, 112, 0.78), rgba(103, 23, 36, 0.72))';
       }
 
@@ -2202,7 +2281,9 @@
       });
       elements.generateBillBtn.addEventListener('click', generateBill);
       elements.resetBillBtn.addEventListener('click', resetCurrentBill);
+      elements.lastBillBtn.addEventListener('click', viewLastBill);
       elements.printBillBtn.addEventListener('click', printBill);
+      elements.themeToggleBtn.addEventListener('click', togglePosTheme);
       elements.closeUpiModal.addEventListener('click', closeUpiModal);
       elements.closeUpiBtn.addEventListener('click', closeUpiModal);
       elements.openCameraBtn.addEventListener('click', openCameraScanner);
@@ -2236,6 +2317,26 @@
         if (event.key === 'Enter') {
           event.preventDefault();
           addToCart();
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'F2') {
+          event.preventDefault();
+          elements.barcodeInput.focus();
+        }
+        if (event.ctrlKey && event.key.toLowerCase() === 'k') {
+          event.preventDefault();
+          elements.productSearchInput.focus();
+        }
+        if (event.key === 'F4') {
+          event.preventDefault();
+          generateBill();
+        }
+        if (event.key === 'Escape') {
+          closeUpiModal();
+          closeCameraScanner();
+          elements.productSearchResults.hidden = true;
         }
       });
 
