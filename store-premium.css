@@ -404,6 +404,10 @@ body::before { background: radial-gradient(circle at 12% calc(12% + var(--scroll
 .filters input, .filters select { background: rgba(18,4,10,.78); color: var(--cinema-ink); border-color: var(--cinema-line); }
 .section-brands .brand-chip { background: linear-gradient(145deg, rgba(61,13,29,.98), rgba(25,6,13,.98)); border-color: rgba(201,162,74,.42); color: var(--cinema-ink); }
 .section-brands .brand-chip strong { color: var(--cinema-ink); }
+.static-page { min-height: 52vh; }
+.static-page-copy { max-width: 760px; color: var(--cinema-muted); font-size: 15px; line-height: 1.95; }
+.recently-viewed .rail { display: flex; overflow-x: auto; }
+.recently-viewed .product { flex: 0 0 min(290px, 74vw); }
 
 .campaign-categories, .campaign-collection, .brand-promise { max-width: 1480px; margin: 0 auto; padding: 92px 5%; }
 .campaign-section-heading { max-width: 700px; margin-bottom: 42px; }

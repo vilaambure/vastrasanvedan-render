@@ -27,6 +27,7 @@ const state = {
   accountNotice: "",
   heroIndex: 0,
   heroTimer: null,
+  recentlyViewed: JSON.parse(localStorage.getItem("vs_recently_viewed") || "[]"),
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -124,6 +125,12 @@ function img(src) {
   return API_BASE_URL ? `${API_BASE_URL}${normalized}` : normalized;
 }
 function productById(id) { return state.products.find((p) => p._id === id); }
+function rememberViewedProduct(id) {
+  const key = String(id || "");
+  if (!key) return;
+  state.recentlyViewed = [key, ...state.recentlyViewed.filter((item) => item !== key)].slice(0, 6);
+  localStorage.setItem("vs_recently_viewed", JSON.stringify(state.recentlyViewed));
+}
 function path() { return location.pathname.replace(/\/$/, "") || "/"; }
 function campaignImage(source, index = 0) {
   return source && !/^https?:\/\//i.test(source) ? img(source) : img(campaignAssets[index % campaignAssets.length]);
@@ -406,6 +413,12 @@ function renderBrandPromise() {
   return `<section class="brand-promise cinematic-section"><div class="brand-promise-image" style="background-image:url('${img(image)}')"></div><div class="brand-promise-copy"><span class="eyebrow">Our promise</span><h2>Authentic <i>•</i> Elegant <i>•</i> You</h2><p>Style that feels like you.</p></div></section>`;
 }
 
+function renderRecentlyViewed() {
+  const items = state.recentlyViewed.map(productById).filter(Boolean);
+  if (!items.length) return "";
+  return `<section class="wrap recently-viewed cinematic-section" data-motion="recently-viewed"><div class="section-head"><span class="eyebrow">Your trail</span><h2>Recently viewed</h2><p class="section-note">Pick up where you left off.</p></div><div class="rail">${items.map((item, index) => productCard(item, { index })).join("")}</div></section>`;
+}
+
 function videoBlock(section) {
   return `<section class="wrap"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "Moving image")}</span><h2>${esc(section.title || "Atelier film")}</h2></div>
     <div class="video-block">
@@ -452,7 +465,7 @@ function renderSection(section) {
 function homepage() {
   const ordered = [...state.sections].sort((a, b) => a.displayOrder - b.displayOrder);
   const nonHero = ordered.filter((section) => !["HERO", "HERO_CAMPAIGN", "CATEGORIES", "FULL_WIDTH_BANNER"].includes(section.type));
-  const body = renderHero() + renderCampaignCategories() + renderCampaignCollection() + (nonHero.length ? nonHero.map(renderSection).join("") : renderSection({ type: "NEW_ARRIVALS", title: "New arrivals" }) + renderSection({ type: "PRODUCT_GRID", title: "The full edit" })) + renderBrandPromise();
+  const body = renderHero() + renderCampaignCategories() + renderCampaignCollection() + (nonHero.length ? nonHero.map(renderSection).join("") : renderSection({ type: "NEW_ARRIVALS", title: "New arrivals" }) + renderSection({ type: "PRODUCT_GRID", title: "The full edit" })) + renderRecentlyViewed() + renderBrandPromise();
   return body;
 }
 
@@ -477,6 +490,7 @@ function pdp() {
   const id = path().split("/").pop();
   const p = productById(id);
   if (!p) return `<div class="state">This piece could not be found.</div>`;
+  rememberViewedProduct(p._id);
   const images = (p.images || []).length ? p.images : [fallback];
   return `<section class="wrap pdp">
     <a class="back-to-store" href="/" aria-label="Back to the main page">&larr; Back to main page</a>
@@ -559,11 +573,29 @@ function bindBag() {
 }
 
 async function staticPage(slug, fallbackTitle) {
+  const fallbackPages = {
+    faqs: {
+      title: "Frequently asked questions",
+      body: "How do I place an order?\nBrowse the collection, open a product, choose the available size and colour, then add it to your bag.\n\nWhat payment options are available?\nOnline checkout accepts UPI. For assistance, contact the store team.\n\nHow long does delivery take?\nDispatch and delivery details are shown on the product page where available. We will confirm the delivery timeline after your order.\n\nCan I ask about fit or fabric?\nYes. Use the contact details below and share the product name; our team can help before you order.\n\nIs the catalogue live?\nYes. Availability and stock are connected to the live store catalogue, so an item can sell out between visits."
+    },
+    legal: {
+      title: "Store policies",
+      body: "Product information\nWe make every effort to keep product images, descriptions, prices and availability accurate. Colours may vary slightly by screen.\n\nOrders and payment\nAn online order is confirmed after the store verifies payment and availability. Prices shown at checkout are the applicable selling prices.\n\nPrivacy\nWe use the details you provide to process orders, support delivery and answer store enquiries. We do not sell customer information.\n\nReturns and support\nFor a return, exchange or issue with an order, contact the store team with your invoice or order details before sending anything back. Eligibility depends on the product condition and store confirmation.\n\nPolicy updates\nThese policies may be updated as the store catalogue and delivery operations change."
+    },
+    contact: {
+      title: "Contact the store",
+      body: "Need help choosing a piece, checking availability or confirming delivery? Share the product name and your question with the Vastra Sanvedan team.\n\nFor order support, keep your invoice number and the phone number used at checkout ready.\n\nStore support\nUse the contact details configured by the store team.\n\nWe reply during store hours and confirm product, payment and delivery details before processing an order."
+    }
+  };
   try {
     const data = await api("/api/shop/pages/" + slug);
-    return `<section class="wrap"><h1 style="font:600 48px Cormorant Garamond,serif">${esc(data.page.title)}</h1><div>${esc(data.page.body).replaceAll("\n", "<br>")}</div></section>`;
+    const body = String(data.page.body || "");
+    const isDemoCopy = /demo storefront|demo products|hello@vastrasanvedan\.com/i.test(body);
+    const page = isDemoCopy && fallbackPages[slug] ? fallbackPages[slug] : data.page;
+    return `<section class="wrap static-page"><span class="eyebrow">Vastra Sanvedan</span><h1 style="font:600 48px Cormorant Garamond,serif">${esc(cleanCopy(page.title, fallbackTitle))}</h1><div class="static-page-copy">${esc(cleanCopy(page.body, "Store information will be updated here.")).replaceAll("\n", "<br>")}</div></section>`;
   } catch (_e) {
-    return `<section class="wrap"><h1 style="font:600 48px Cormorant Garamond,serif">${esc(fallbackTitle)}</h1><p class="empty">This page will be published from the admin studio.</p></section>`;
+    const page = fallbackPages[slug] || { title: fallbackTitle, body: "Store information will be updated here." };
+    return `<section class="wrap static-page"><span class="eyebrow">Vastra Sanvedan</span><h1 style="font:600 48px Cormorant Garamond,serif">${esc(page.title)}</h1><div class="static-page-copy">${esc(page.body).replaceAll("\n", "<br>")}</div></section>`;
   }
 }
 
