@@ -164,7 +164,8 @@ body.cinematic-loading .cinematic-intro { opacity: 1; visibility: visible; trans
 .product:hover { transform: translateY(-7px); box-shadow: 0 20px 36px rgba(48,10,24,.12); }
 .product-media { height: 390px; background: #eee1d9; }
 .product-media::after { background: linear-gradient(180deg, rgba(48,10,24,0) 62%, rgba(48,10,24,.16)); }
-.product-media img { transition: transform .7s cubic-bezier(.2,.7,.2,1), filter .7s ease; }
+.product-media img { opacity: 0; transition: opacity .45s ease, transform .7s cubic-bezier(.2,.7,.2,1), filter .7s ease; }
+.product-media img.is-loaded { opacity: 1; }
 .product:hover .product-media img { transform: scale(1.045); }
 .badge { top: 16px; left: 16px; padding: 7px 9px; border-radius: 0; background: #f8efe6; color: var(--brand-color); font-size: 9px; letter-spacing: .14em; }
 .heart { top: 14px; right: 14px; width: 34px; height: 34px; border: 1px solid rgba(117,27,53,.18); border-radius: 50%; color: var(--brand-color); background: rgba(252,250,246,.9); font-size: 17px; }
@@ -415,7 +416,8 @@ body::before { background: radial-gradient(circle at 12% calc(12% + var(--scroll
 .collection-mosaic { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; min-height: 430px; }
 .collection-tile { position: relative; min-height: 280px; overflow: hidden; border: 1px solid var(--cinema-line); background: #2d0a17; }
 .collection-tile:nth-child(2), .collection-tile:nth-child(4) { margin-top: 64px; }
-.collection-tile img { width: 100%; height: 100%; object-fit: cover; transition: transform .8s cubic-bezier(.2,.7,.2,1), filter .8s ease; }
+.collection-tile img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .45s ease, transform .8s cubic-bezier(.2,.7,.2,1), filter .8s ease; }
+.collection-tile img.is-loaded { opacity: 1; }
 .collection-tile-shade { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 35%, rgba(13,3,7,.88)); }
 .collection-tile-copy { position: absolute; right: 14px; bottom: 15px; left: 14px; display: grid; gap: 4px; color: var(--cinema-ink); }
 .collection-tile-copy small, .collection-tile-copy em { color: var(--cinema-gold); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; }

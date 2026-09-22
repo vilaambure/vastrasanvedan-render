@@ -140,6 +140,24 @@ function productImage(product, index = 0) {
   return product?.images?.[0] || campaignAssets[index % campaignAssets.length];
 }
 
+function editorialCollectionProducts() {
+  const used = new Set();
+  const pick = (predicate, fallbackIndex) => {
+    const match = state.products.find((product) => !used.has(String(product._id)) && predicate(product));
+    const fallbackProduct = state.products.find((product) => !used.has(String(product._id))) || state.products[fallbackIndex];
+    const product = match || fallbackProduct;
+    if (product) used.add(String(product._id));
+    return product;
+  };
+  const text = (product) => `${product.name || ""} ${product.category || ""}`.toLowerCase();
+  return [
+    pick((product) => product.newArrival, 0),
+    pick((product) => /\bmen\b|shirt|kurtas/.test(text(product)), 1),
+    pick((product) => /festive|wedding|lehenga|party/.test(text(product)), 2),
+    pick((product) => /traditional|saree|sari|kurta|kurti|ethnic/.test(text(product)), 3),
+  ].filter(Boolean);
+}
+
 function productShareUrl(productId) {
   const id = String(productId || "").trim();
   if (!id) return "";
@@ -249,11 +267,12 @@ function openOverlay(id) {
 function productCard(p, options = {}) {
   const available = Number(p.stock || 0) > 0;
   const images = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
+  const imageFallback = img(campaignAssets[Number(options.index || 0) % campaignAssets.length]);
   return `<article class="product${options.lead ? " product--lead" : ""}" style="--card-index:${Number(options.index || 0)}">
     <div class="product-media">
       <span class="badge">${p.newArrival ? "New arrival" : esc(p.category || "Edit")}</span>
       <button class="heart" data-wish="${p._id}" aria-label="Favourite">${state.wishlist.has(p._id) ? "♥" : "♡"}</button>
-      <a href="/product/${p._id}"><img class="product-image-primary" loading="lazy" src="${esc(img(images[0]))}" alt="${esc(p.name)}" onerror="this.src='${fallback}'">${images[1] ? `<img class="product-image-secondary" loading="lazy" src="${esc(img(images[1]))}" alt="" onerror="this.remove()">` : ""}</a>
+      <a href="/product/${p._id}"><img class="product-image-primary" loading="lazy" src="${esc(img(images[0]))}" alt="${esc(p.name)}" onload="this.classList.add('is-loaded')" onerror="this.onerror=null;this.src='${imageFallback}'">${images[1] ? `<img class="product-image-secondary" loading="lazy" src="${esc(img(images[1]))}" alt="" onload="this.classList.add('is-loaded')" onerror="this.remove()">` : ""}</a>
     </div>
     <div class="product-info">
       <span class="product-index">${String(state.products.indexOf(p) + 1).padStart(2, "0")}</span>
@@ -347,7 +366,7 @@ function renderHero() {
     ${slides.map((s, idx) => `<div class="hero-slide ${idx === i ? "active" : ""}">
       <picture>
         <source media="(max-width: 700px)" srcset="${esc(campaignImage(s.mobileImage || s.image, idx))}">
-        <img src="${esc(campaignImage(s.image, idx))}" alt="${esc(s.title)}" onerror="this.src='${img(campaignAssets[idx % campaignAssets.length])}'">
+        <img src="${esc(campaignImage(s.image, idx))}" alt="${esc(s.title)}" onload="this.classList.add('is-loaded')" onerror="this.onerror=null;this.src='${img(campaignAssets[idx % campaignAssets.length])}'">
       </picture>
       <span class="hero-vfx" aria-hidden="true"><i></i><i></i><i></i></span><div class="hero-copy"><span class="eyebrow">${esc(s.subtitle || "Vastra Sanvedan / 01")}</span><h1>${esc(s.title || "The season, considered.")}</h1><p>${esc(s.description || "")}</p>${s.ctaLabel ? `<a class="cta" href="${esc(s.ctaUrl || "/shop")}">${esc(s.ctaLabel)}</a>` : `<a class="cta" href="/shop">Enter the collection</a>`}</div><span class="hero-caption">${String(idx + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}<br>Vastra Sanvedan</span>
     </div>`).join("")}
@@ -380,11 +399,11 @@ function renderCampaignCategories() {
 }
 
 function renderCampaignCollection() {
-  const items = state.products.slice(0, 4);
+  const items = editorialCollectionProducts();
   const labels = ["New arrivals", "Men's collection", "Festive edit", "Traditional picks"];
   return `<section class="campaign-collection cinematic-section" id="featured-collection">
     <div class="collection-copy"><span class="eyebrow">Featured collection</span><h2>Handcrafted<br><em>with Heart</em></h2><p>Every piece tells a story of tradition, craftsmanship and considered beauty.</p><a class="cta" href="/shop">Shop now <span aria-hidden="true">→</span></a></div>
-    <div class="collection-mosaic">${items.map((item, index) => `<a class="collection-tile collection-tile-${index + 1}" href="/product/${item._id}"><img src="${esc(img(productImage(item, index)))}" alt="${esc(item.name)}" loading="lazy"><span class="collection-tile-shade"></span><span class="collection-tile-copy"><small>${String(index + 1).padStart(2, "0")}</small><strong>${labels[index]}</strong><em>Shop now →</em></span></a>`).join("")}</div>
+    <div class="collection-mosaic">${items.map((item, index) => `<a class="collection-tile collection-tile-${index + 1}" href="/product/${item._id}"><img src="${esc(img(productImage(item, index)))}" alt="${esc(item.name)}" loading="eager" onload="this.classList.add('is-loaded')" onerror="this.onerror=null;this.src='${img(campaignAssets[index % campaignAssets.length])}'"><span class="collection-tile-shade"></span><span class="collection-tile-copy"><small>${String(index + 1).padStart(2, "0")}</small><strong>${labels[index]}</strong><em>Shop now →</em></span></a>`).join("")}</div>
   </section>`;
 }
 
@@ -418,7 +437,7 @@ function renderSection(section) {
       <div class="scroller">${(state.brands.length ? state.brands : []).map((b, index) => `<div class="brand-chip">${b.logo ? `<img src="${esc(campaignImage(b.logo, index))}" alt="${esc(b.name)}" onerror="this.src='${img(campaignAssets[index % campaignAssets.length])}'">` : ""}<strong>${esc(b.name)}</strong></div>`).join("") || '<p class="empty">Brands will appear once added in admin.</p>'}</div></section>`;
   }
   if (["FULL_WIDTH_BANNER"].includes(type)) {
-      return `<section class="banner cinematic-section section-banner" data-motion="banner" style="background-image:linear-gradient(#1c181466,#1c181488),url('${esc(img(section.image || ""))}')"><div><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2><p>${esc(section.description)}</p>${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
+      return `<section class="banner cinematic-section section-banner" data-motion="banner" style="background-image:linear-gradient(#1c181466,#1c181488),url('${esc(campaignImage(section.image, 0))}')"><div><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2><p>${esc(section.description)}</p>${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
   }
   if (["EDITORIAL", "EDITORIAL_STORY", "SPLIT_STORY", "BRAND_STORY", "COLLECTION"].includes(type)) {
     return `<section class="editorial cinematic-section section-editorial" data-motion="editorial"><div class="editorial-media" style="background-image:url('${esc(campaignImage(section.image, 2))}')"></div><div class="editorial-copy"><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2><p>${esc(section.description)}</p>${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}" style="color:var(--ink);border-color:var(--ink)">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
