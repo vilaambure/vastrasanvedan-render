@@ -273,9 +273,11 @@ function productCard(p, options = {}) {
   const available = Number(p.stock || 0) > 0;
   const images = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
   const imageFallback = img(campaignAssets[Number(options.index || 0) % campaignAssets.length]);
+  const discount = Number(p.discount || 0) || (Number(p.mrp) > Number(p.sellingPrice) ? Math.round((1 - Number(p.sellingPrice) / Number(p.mrp)) * 100) : 0);
+  const badge = p.newArrival ? "New arrival" : Number(p.stock || 0) > 0 && Number(p.stock || 0) <= 3 ? "Low stock" : esc(p.category || "Edit");
   return `<article class="product${options.lead ? " product--lead" : ""}" style="--card-index:${Number(options.index || 0)}">
     <div class="product-media">
-      <span class="badge">${p.newArrival ? "New arrival" : esc(p.category || "Edit")}</span>
+      <span class="badge">${badge}</span>
       <button class="heart" data-wish="${p._id}" aria-label="Favourite">${state.wishlist.has(p._id) ? "♥" : "♡"}</button>
       <a href="/product/${p._id}"><img class="product-image-primary" loading="lazy" src="${esc(img(images[0]))}" alt="${esc(p.name)}" onload="this.classList.add('is-loaded')" onerror="this.onerror=null;this.src='${imageFallback}'">${images[1] ? `<img class="product-image-secondary" loading="lazy" src="${esc(img(images[1]))}" alt="" onload="this.classList.add('is-loaded')" onerror="this.remove()">` : ""}</a>
     </div>
@@ -283,7 +285,7 @@ function productCard(p, options = {}) {
       <span class="product-index">${String(state.products.indexOf(p) + 1).padStart(2, "0")}</span>
       <h3>${esc(p.name)}</h3>
       <p>${esc(cleanBrandName(p.brand) || cleanCopy(p.description, "From the live atelier catalogue."))}</p>
-      <div class="prices"><strong>${money(p.sellingPrice)}</strong><del>${money(p.mrp)}</del><span class="off">${p.discount || 0}% off</span></div>
+      <div class="prices"><strong>${money(p.sellingPrice)}</strong>${Number(p.mrp) > Number(p.sellingPrice) ? `<del>${money(p.mrp)}</del>` : ""}${discount ? `<span class="off">${discount}% off</span>` : ""}</div>
       <small class="stock-note ${available ? "is-available" : "is-sold-out"}">${available ? `${p.stock} piece${Number(p.stock) === 1 ? "" : "s"} available` : "Currently unavailable"}</small>
       <div class="stacked-actions">
         <button class="view" data-quick="${p._id}" ${available ? "" : "disabled"}>${available ? "Quick view" : "Out of stock"}</button>
@@ -320,7 +322,7 @@ function openQuick(id) {
   const sizes = productSizes(p);
   state.selected = { product: p, size: sizes[0] || "", color: p.colors?.[0] || "Signature" };
   $("#modalBox").innerHTML = `<div class="modal-head"><h2>${esc(p.name)}</h2><button class="icon-btn close-x" data-close-modal aria-label="Close">×</button></div>
-    <p>${esc(p.description || "")}</p>
+    <p>${esc(cleanCopy(p.description, "A considered piece from the live collection."))}</p>
     <div class="prices"><strong>${money(p.sellingPrice)}</strong><del>${money(p.mrp)}</del></div>
     <p>${Number(p.stock) > 0 ? `${p.stock} in stock` : "Out of stock"}</p>
     ${sizes.length ? `<label class="field">Size<div class="swatches" id="qSizes">${sizes.map((s) => `<button type="button" class="${s === state.selected.size ? "active" : ""}" data-size="${esc(s)}">${esc(s)}</button>`).join("")}</div></label>` : ""}
@@ -375,7 +377,7 @@ function renderHero() {
       </picture>
       <span class="hero-vfx" aria-hidden="true"><i></i><i></i><i></i></span><div class="hero-copy"><span class="eyebrow">${esc(s.subtitle || "Vastra Sanvedan / 01")}</span><h1>${esc(s.title || "The season, considered.")}</h1>${cleanCopy(s.description) ? `<p>${esc(cleanCopy(s.description))}</p>` : ""}${s.ctaLabel ? `<a class="cta" href="${esc(s.ctaUrl || "/shop")}">${esc(s.ctaLabel)}</a>` : `<a class="cta" href="/shop">Enter the collection</a>`}</div><span class="hero-caption">${String(idx + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}<br>Vastra Sanvedan</span>
     </div>`).join("")}
-    <div class="hero-nav">${slides.map((_, idx) => `<button class="${idx === i ? "active" : ""}" data-hero="${idx}" aria-label="Slide ${idx + 1}"></button>`).join("")}</div>
+    <div class="hero-nav">${slides.map((_, idx) => `<button class="${idx === i ? "active" : ""}" data-hero="${idx}" aria-label="Slide ${idx + 1}"></button>`).join("")}</div><span class="hero-scroll-cue">Scroll to explore <b>↓</b></span>
   </section>`;
 }
 
@@ -811,6 +813,15 @@ function setupChrome() {
   if (headerRight && !headerRight.querySelector("#bagButton")) {
     bagButton.id = "bagButton";
     headerRight.appendChild(bagButton);
+  }
+  if (!document.getElementById("mobileDemoNav")) {
+    const mobileNav = document.createElement("nav");
+    mobileNav.id = "mobileDemoNav";
+    mobileNav.className = "mobile-demo-nav";
+    mobileNav.setAttribute("aria-label", "Quick navigation");
+    mobileNav.innerHTML = '<a href="/" aria-label="Home"><span>⌂</span>Home</a><a href="/shop#categories" aria-label="Categories"><span>◈</span>Explore</a><button type="button" data-mobile-search aria-label="Search"><span>⌕</span>Search</button><a href="/bag" aria-label="Bag"><span>□</span>Bag</a>';
+    document.body.appendChild(mobileNav);
+    mobileNav.querySelector("[data-mobile-search]").onclick = () => { openOverlay("searchOverlay"); $("#searchInput").focus(); };
   }
   const floatingWhatsApp = document.getElementById("floatingWhatsApp");
   if (floatingWhatsApp) floatingWhatsApp.onclick = () => openWhatsAppOrder(state.bag);
