@@ -5,18 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#1a1714">
 <title>Vastra Sanvedan</title>
-<script>
-  (() => {
-    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    const lite = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || connection?.saveData || Number(navigator.hardwareConcurrency || 8) <= 6;
-    if (lite) document.documentElement.classList.add('performance-lite');
-  })();
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Outfit:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/store.css?v=20260922-performance-3">
-<link rel="stylesheet" href="/store-premium.css?v=20260922-performance-3">
+<link rel="stylesheet" href="/store.css?v=20260922-recently-viewed">
+<link rel="stylesheet" href="/store-premium.css?v=20260922-recently-viewed">
 </head>
 <body>
 <div class="site-ambient" aria-hidden="true">
@@ -26,7 +19,7 @@
   <span class="ambient-ribbon ambient-ribbon-one"></span>
   <span class="ambient-ribbon ambient-ribbon-two"></span>
 </div>
-<video class="site-video-bg" muted loop playsinline preload="none" aria-hidden="true" poster="/uploads/1788786450969-5d6b9e8eddd2.jpg">
+<video class="site-video-bg" autoplay muted loop playsinline preload="auto" aria-hidden="true" poster="/uploads/1788786450969-5d6b9e8eddd2.jpg">
   <source src="/assets/videos/vastra-silk-bg.mp4" type="video/mp4">
 </video>
 <div class="promo" id="promo"></div>
@@ -92,6 +85,6 @@
   <div class="modal-box" id="modalBox"></div>
 </div>
 
-<script src="/shop.js?v=20260922-performance-3"></script>
+<script src="/shop.js?v=20260922-recently-viewed"></script>
 </body>
 </html>

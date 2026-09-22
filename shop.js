@@ -685,7 +685,77 @@ function bindCinematicScroll() {
 }
 
 function bindAmbientCanvas() {
-  return;
+  const canvas = document.getElementById("ambientCanvas");
+  if (!canvas || canvas.dataset.bound === "true") return;
+  canvas.dataset.bound = "true";
+  const context = canvas.getContext("2d", { alpha: true });
+  if (!context) return;
+  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const lowPower = Number(navigator.hardwareConcurrency || 4) <= 2 || Number(navigator.deviceMemory || 4) <= 2;
+  const particleCount = reduced ? 0 : lowPower ? 18 : 34;
+  const particles = Array.from({ length: particleCount }, (_, index) => ({
+    seed: index * 1.73,
+    x: Math.random(),
+    y: Math.random(),
+    size: 0.7 + Math.random() * 1.8,
+    speed: 0.00008 + Math.random() * 0.00013,
+  }));
+  let width = 0;
+  let height = 0;
+  let frame = 0;
+  let active = !document.hidden;
+
+  const resize = () => {
+    const ratio = Math.min(window.devicePixelRatio || 1, lowPower ? 1 : 1.5);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * ratio);
+    canvas.height = Math.floor(height * ratio);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+  };
+  const draw = (time) => {
+    frame = 0;
+    if (!active) return;
+    context.clearRect(0, 0, width, height);
+    const motion = reduced ? 0 : time;
+    const ribbonY = height * 0.42 + Math.sin(motion * 0.00012) * height * 0.06;
+    const ribbon = context.createLinearGradient(0, ribbonY - height * 0.22, width, ribbonY + height * 0.22);
+    ribbon.addColorStop(0, "rgba(61, 16, 28, 0)");
+    ribbon.addColorStop(0.48, "rgba(117, 27, 53, 0.08)");
+    ribbon.addColorStop(0.56, "rgba(201, 157, 79, 0.07)");
+    ribbon.addColorStop(1, "rgba(61, 16, 28, 0)");
+    context.fillStyle = ribbon;
+    context.beginPath();
+    context.moveTo(-width * 0.1, ribbonY);
+    context.bezierCurveTo(width * 0.26, ribbonY - height * 0.2, width * 0.58, ribbonY + height * 0.2, width * 1.1, ribbonY - height * 0.04);
+    context.lineTo(width * 1.1, ribbonY + height * 0.18);
+    context.bezierCurveTo(width * 0.55, ribbonY + height * 0.3, width * 0.25, ribbonY - height * 0.1, -width * 0.1, ribbonY + height * 0.16);
+    context.closePath();
+    context.fill();
+    particles.forEach((particle) => {
+      particle.y -= particle.speed * 16;
+      if (particle.y < -0.02) particle.y = 1.02;
+      const x = particle.x * width + Math.sin(motion * 0.0003 + particle.seed) * 18;
+      const y = particle.y * height;
+      const alpha = 0.16 + (Math.sin(motion * 0.001 + particle.seed) + 1) * 0.08;
+      context.fillStyle = `rgba(201, 157, 79, ${alpha.toFixed(3)})`;
+      context.beginPath();
+      context.arc(x, y, particle.size, 0, Math.PI * 2);
+      context.fill();
+    });
+    if (!reduced) frame = window.requestAnimationFrame(draw);
+  };
+  const requestDraw = () => { if (!frame && active && !reduced) frame = window.requestAnimationFrame(draw); };
+  resize();
+  window.addEventListener("resize", resize, { passive: true });
+  document.addEventListener("visibilitychange", () => {
+    active = !document.hidden;
+    if (active) requestDraw();
+  });
+  if (reduced) draw(0);
+  else requestDraw();
 }
 
 function bindPdp() {
@@ -737,6 +807,7 @@ async function renderRoute() {
 }
 
 function setupChrome() {
+  bindAmbientCanvas();
   $("#menuOpen").onclick = () => { $("#menu").hidden = false; };
   const backHome = $("#backHome");
   if (backHome) {
