@@ -60,17 +60,6 @@ body::before {
   transform: translate(-50%, -50%) scale(1.2);
 }
 .promo, .header, main, .footer { position: relative; z-index: 2; }
-body.cinematic-loading { overflow: hidden; }
-.cinematic-intro { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; overflow: hidden; background: var(--burgundy-deep); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .5s ease, visibility 0s linear .5s; }
-body.cinematic-loading .cinematic-intro { opacity: 1; visibility: visible; transition-delay: 0s; }
-.cinematic-intro::before, .cinematic-intro::after { content: ""; position: absolute; border: 1px solid rgba(201,157,79,.22); border-radius: 50%; transform: scale(.6); animation: intro-ring 1.5s ease-out both; }
-.cinematic-intro::before { width: min(72vw, 720px); aspect-ratio: 1; }
-.cinematic-intro::after { width: min(42vw, 420px); aspect-ratio: 1; animation-delay: .12s; }
-.intro-light { position: absolute; width: 42vw; height: 42vw; max-width: 560px; max-height: 560px; border-radius: 50%; background: radial-gradient(circle, rgba(201,157,79,.2), transparent 68%); filter: blur(10px); animation: intro-light 1.35s ease-out both; }
-.intro-frame { position: relative; display: grid; justify-items: center; gap: 10px; color: #fffaf4; text-align: center; animation: intro-copy .8s .1s both cubic-bezier(.2,.7,.2,1); }
-.intro-mark { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid var(--cognac); color: #d2b078; font: 600 15px var(--font-display); letter-spacing: .1em; }
-.intro-frame strong { font: 500 clamp(30px, 5vw, 60px)/.9 var(--font-display); letter-spacing: .02em; }
-.intro-frame small { color: #d8bbb0; font-size: 9px; letter-spacing: .28em; text-transform: uppercase; }
 .promo { min-height: 32px; background: var(--burgundy-deep); color: #f6e9df; font-size: 10px; letter-spacing: .24em; }
 .header {
   min-height: 76px;
@@ -329,6 +318,22 @@ body { scroll-padding-top: 84px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .reveal-section { opacity: 1; transform: none; transition: none; }
+}
+
+/* Fast presentation motion: immediate feedback without a blocking entrance. */
+.reveal-section { transition-duration: .42s; transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
+.reveal-section.is-visible { opacity: 1; transform: translate3d(0, 0, 0); }
+.reveal-section.is-visible .product,
+.reveal-section.is-visible .scroller-item,
+.reveal-section.is-visible .brand-chip { animation-duration: .48s; animation-delay: calc(var(--card-index, 0) * 32ms); }
+.product, .scroller-item, .cta, .primary, .view, .ghost { transition-duration: .22s; }
+.product-media img, .collection-tile img { transition-duration: .36s; }
+.site-ambient { contain: paint; }
+.ambient-canvas { contain: strict; }
+@media (max-width: 700px) {
+  .reveal-section.is-visible .product,
+  .reveal-section.is-visible .scroller-item,
+  .reveal-section.is-visible .brand-chip { animation-delay: calc(var(--card-index, 0) * 18ms); }
 }
 
 /* Campaign composition */

@@ -48,19 +48,6 @@ const productSizes = (product) => Array.isArray(product?.sizes) ? product.sizes.
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]));
 const STATUSES = ["PLACED", "CONFIRMED", "PACKING", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"];
 
-function startCinematicIntro() {
-  const intro = document.getElementById("cinematicIntro");
-  if (!intro) return;
-  document.body.classList.add("cinematic-loading");
-  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  const dismiss = () => {
-    document.body.classList.remove("cinematic-loading");
-    intro.addEventListener("transitionend", () => intro.remove(), { once: true });
-    window.setTimeout(() => intro.remove(), 900);
-  };
-  window.setTimeout(dismiss, reduced ? 40 : 950);
-}
-
 function persist() { localStorage.setItem("vs_wishlist", JSON.stringify([...state.wishlist])); }
 function persistBag() { localStorage.setItem("vs_bag", JSON.stringify(state.bag)); }
 
@@ -847,7 +834,6 @@ function setupChrome() {
 }
 
 async function boot() {
-  startCinematicIntro();
   try {
     const [homeResult, catalogResult] = await Promise.allSettled([
       api("/api/content/homepage"),
