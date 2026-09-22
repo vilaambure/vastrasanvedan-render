@@ -346,7 +346,7 @@ function renderHero() {
   return `<section class="hero" id="hero">
     ${slides.map((s, idx) => `<div class="hero-slide ${idx === i ? "active" : ""}">
       <picture>
-        <source media="(max-width: 700px)" srcset="${esc(campaignImage(s.mobileImage || s.image, idx + 1))}">
+        <source media="(max-width: 700px)" srcset="${esc(campaignImage(s.mobileImage || s.image, idx))}">
         <img src="${esc(campaignImage(s.image, idx))}" alt="${esc(s.title)}" onerror="this.src='${img(campaignAssets[idx % campaignAssets.length])}'">
       </picture>
       <span class="hero-vfx" aria-hidden="true"><i></i><i></i><i></i></span><div class="hero-copy"><span class="eyebrow">${esc(s.subtitle || "Vastra Sanvedan / 01")}</span><h1>${esc(s.title || "The season, considered.")}</h1><p>${esc(s.description || "")}</p>${s.ctaLabel ? `<a class="cta" href="${esc(s.ctaUrl || "/shop")}">${esc(s.ctaLabel)}</a>` : `<a class="cta" href="/shop">Enter the collection</a>`}</div><span class="hero-caption">${String(idx + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}<br>Vastra Sanvedan</span>
