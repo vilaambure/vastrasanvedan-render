@@ -31,6 +31,11 @@ const state = {
 
 const $ = (sel) => document.querySelector(sel);
 const money = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
+const cleanCopy = (value, fallback = "") => {
+  const cleaned = String(value || "").replace(/\[VS-DEMO-CONTENT\]/gi, "").trim();
+  return cleaned || fallback;
+};
+const cleanBrandName = (value) => cleanCopy(value).replace(/^VS-DEMO\s+/i, "").trim();
 const fallback = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000"><rect fill="#e7dfd4" width="800" height="1000"/><text x="50%" y="50%" fill="#7b7369" font-size="28" text-anchor="middle" font-family="serif">Vastra Sanvedan</text></svg>');
 const campaignAssets = [
   "/assets/banners/1788786450969-5d6b9e8eddd2.jpg",
@@ -277,7 +282,7 @@ function productCard(p, options = {}) {
     <div class="product-info">
       <span class="product-index">${String(state.products.indexOf(p) + 1).padStart(2, "0")}</span>
       <h3>${esc(p.name)}</h3>
-      <p>${esc(p.brand || p.description || "From the live atelier catalogue.")}</p>
+      <p>${esc(cleanBrandName(p.brand) || cleanCopy(p.description, "From the live atelier catalogue."))}</p>
       <div class="prices"><strong>${money(p.sellingPrice)}</strong><del>${money(p.mrp)}</del><span class="off">${p.discount || 0}% off</span></div>
       <small class="stock-note ${available ? "is-available" : "is-sold-out"}">${available ? `${p.stock} piece${Number(p.stock) === 1 ? "" : "s"} available` : "Currently unavailable"}</small>
       <div class="stacked-actions">
@@ -368,7 +373,7 @@ function renderHero() {
         <source media="(max-width: 700px)" srcset="${esc(campaignImage(s.mobileImage || s.image, idx))}">
         <img src="${esc(campaignImage(s.image, idx))}" alt="${esc(s.title)}" onload="this.classList.add('is-loaded')" onerror="this.onerror=null;this.src='${img(campaignAssets[idx % campaignAssets.length])}'">
       </picture>
-      <span class="hero-vfx" aria-hidden="true"><i></i><i></i><i></i></span><div class="hero-copy"><span class="eyebrow">${esc(s.subtitle || "Vastra Sanvedan / 01")}</span><h1>${esc(s.title || "The season, considered.")}</h1><p>${esc(s.description || "")}</p>${s.ctaLabel ? `<a class="cta" href="${esc(s.ctaUrl || "/shop")}">${esc(s.ctaLabel)}</a>` : `<a class="cta" href="/shop">Enter the collection</a>`}</div><span class="hero-caption">${String(idx + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}<br>Vastra Sanvedan</span>
+      <span class="hero-vfx" aria-hidden="true"><i></i><i></i><i></i></span><div class="hero-copy"><span class="eyebrow">${esc(s.subtitle || "Vastra Sanvedan / 01")}</span><h1>${esc(s.title || "The season, considered.")}</h1>${cleanCopy(s.description) ? `<p>${esc(cleanCopy(s.description))}</p>` : ""}${s.ctaLabel ? `<a class="cta" href="${esc(s.ctaUrl || "/shop")}">${esc(s.ctaLabel)}</a>` : `<a class="cta" href="/shop">Enter the collection</a>`}</div><span class="hero-caption">${String(idx + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}<br>Vastra Sanvedan</span>
     </div>`).join("")}
     <div class="hero-nav">${slides.map((_, idx) => `<button class="${idx === i ? "active" : ""}" data-hero="${idx}" aria-label="Slide ${idx + 1}"></button>`).join("")}</div>
   </section>`;
@@ -429,29 +434,29 @@ function renderSection(section) {
   if (["HERO", "HERO_CAMPAIGN"].includes(type)) return "";
   if (["CATEGORIES", "CATEGORY_SHOWCASE"].includes(type)) {
     const cats = state.categories.length ? state.categories : [...new Set(state.products.map((p) => p.category).filter(Boolean))].map((name) => ({ name }));
-      return `<section class="wrap reveal-section cinematic-section section-categories" data-motion="categories"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "Shop by world")}</span><h2>${esc(section.title || "Categories")}</h2>${section.description ? `<p class="section-note">${esc(section.description)}</p>` : ""}</div>
+      return `<section class="wrap reveal-section cinematic-section section-categories" data-motion="categories"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "Shop by world")}</span><h2>${esc(section.title || "Categories")}</h2>${cleanCopy(section.description) ? `<p class="section-note">${esc(cleanCopy(section.description))}</p>` : ""}</div>
       <div class="scroller">${cats.map((c, index) => `<a class="scroller-item" href="/shop?category=${encodeURIComponent(c.name)}" style="background-image:linear-gradient(140deg,#300a18cc,#751b3566),url('${esc(c.image || "")}')"><span class="category-index">0${index + 1}</span><h3>${esc(c.name)}</h3><span class="category-arrow">↗</span></a>`).join("")}</div></section>`;
   }
   if (type === "BRANDS") {
      return `<section class="wrap cinematic-section section-brands" id="brands" data-motion="brands"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "Houses we keep")}</span><h2>${esc(section.title || "Brands")}</h2></div>
-      <div class="scroller">${(state.brands.length ? state.brands : []).map((b, index) => `<div class="brand-chip">${b.logo ? `<img src="${esc(campaignImage(b.logo, index))}" alt="${esc(b.name)}" onerror="this.src='${img(campaignAssets[index % campaignAssets.length])}'">` : ""}<strong>${esc(b.name)}</strong></div>`).join("") || '<p class="empty">Brands will appear once added in admin.</p>'}</div></section>`;
+      <div class="scroller">${(state.brands.length ? state.brands : []).map((b, index) => `<div class="brand-chip">${b.logo ? `<img src="${esc(campaignImage(b.logo, index))}" alt="${esc(cleanBrandName(b.name))}" onerror="this.src='${img(campaignAssets[index % campaignAssets.length])}'">` : ""}<strong>${esc(cleanBrandName(b.name))}</strong></div>`).join("") || '<p class="empty">Brands will appear once added in admin.</p>'}</div></section>`;
   }
   if (["FULL_WIDTH_BANNER"].includes(type)) {
-      return `<section class="banner cinematic-section section-banner" data-motion="banner" style="background-image:linear-gradient(#1c181466,#1c181488),url('${esc(campaignImage(section.image, 0))}')"><div><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2><p>${esc(section.description)}</p>${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
+      return `<section class="banner cinematic-section section-banner" data-motion="banner" style="background-image:linear-gradient(#1c181466,#1c181488),url('${esc(campaignImage(section.image, 0))}')"><div><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2>${cleanCopy(section.description) ? `<p>${esc(cleanCopy(section.description))}</p>` : ""}${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
   }
   if (["EDITORIAL", "EDITORIAL_STORY", "SPLIT_STORY", "BRAND_STORY", "COLLECTION"].includes(type)) {
-    return `<section class="editorial cinematic-section section-editorial" data-motion="editorial"><div class="editorial-media" style="background-image:url('${esc(campaignImage(section.image, 2))}')"></div><div class="editorial-copy"><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2><p>${esc(section.description)}</p>${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}" style="color:var(--ink);border-color:var(--ink)">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
+    return `<section class="editorial cinematic-section section-editorial" data-motion="editorial"><div class="editorial-media" style="background-image:url('${esc(campaignImage(section.image, 2))}')"></div><div class="editorial-copy"><span class="eyebrow">${esc(section.subtitle)}</span><h2>${esc(section.title)}</h2>${cleanCopy(section.description) ? `<p>${esc(cleanCopy(section.description))}</p>` : ""}${section.ctaLabel ? `<a class="cta" href="${esc(section.ctaUrl || "/shop")}" style="color:var(--ink);border-color:var(--ink)">${esc(section.ctaLabel)}</a>` : ""}</div></section>`;
   }
   if (type === "LOOKBOOK") {
     return `<section class="wrap cinematic-section section-lookbook" data-motion="lookbook"><div class="section-head"><h2>${esc(section.title || "Lookbook")}</h2></div>
-      <div class="lookbook"><div class="look tall" style="background-image:linear-gradient(#1c181466,#1c181488),url('${esc(img(section.image || ""))}')"><h3>${esc(section.title)}</h3></div>
-      <div class="look" style="background-image:linear-gradient(#1c181466,#1c181488),url('${esc(img(section.mobileImage || section.image || ""))}')"><p>${esc(section.description)}</p></div></div></section>`;
+        <div class="lookbook"><div class="look tall" style="background-image:linear-gradient(#1c181466,#1c181488),url('${esc(img(section.image || ""))}')"><h3>${esc(section.title)}</h3></div>
+        <div class="look" style="background-image:linear-gradient(#1c181466,#1c181488),url('${esc(img(section.mobileImage || section.image || ""))}')">${cleanCopy(section.description) ? `<p>${esc(cleanCopy(section.description))}</p>` : ""}</div></div></section>`;
   }
-  if (["PROMO_STRIP", "PROMOTIONAL_STRIP"].includes(type)) return `<div class="promo-strip cinematic-section section-promo" data-motion="promo">${esc(section.title || section.description)}</div>`;
+      if (["PROMO_STRIP", "PROMOTIONAL_STRIP"].includes(type)) return `<div class="promo-strip cinematic-section section-promo" data-motion="promo">${esc(cleanCopy(section.title || section.description))}</div>`;
   if (type === "VIDEO") return videoBlock(section).replace('<section class="wrap">', '<section class="wrap cinematic-section section-video" data-motion="video">');
   const items = productsForSection(section);
   const grid = ["PRODUCT_GRID", "FEATURED"].includes(type);
-  return `<section class="wrap reveal-section cinematic-section section-products section-${type.toLowerCase()}" data-motion="products"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "From the catalogue")}</span><h2>${esc(section.title || type.replaceAll("_", " "))}</h2>${section.description ? `<p class="section-note">${esc(section.description)}</p>` : ""}</div>
+  return `<section class="wrap reveal-section cinematic-section section-products section-${type.toLowerCase()}" data-motion="products"><div class="section-head"><span class="eyebrow">${esc(section.subtitle || "From the catalogue")}</span><h2>${esc(section.title || type.replaceAll("_", " "))}</h2>${cleanCopy(section.description) ? `<p class="section-note">${esc(cleanCopy(section.description))}</p>` : ""}</div>
     <div class="${grid ? "product-grid" : "rail"}">${items.map((item, index) => productCard(item, { lead: grid && index === 0, index })).join("") || '<p class="empty">No products in this edit yet.</p>'}</div></section>`;
 }
 
