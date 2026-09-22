@@ -598,7 +598,7 @@ function bindReveals() {
       entry.target.classList.add("is-visible");
       currentObserver.unobserve(entry.target);
     });
-  }, { rootMargin: "0px 0px -12% 0px", threshold: 0.08 });
+  }, { rootMargin: "0px 0px -4% 0px", threshold: 0.02 });
   sections.forEach((section) => observer.observe(section));
 }
 
@@ -622,9 +622,16 @@ function bindCinematicScroll() {
   if (document.documentElement.dataset.cinematicScrollBound === "true") return;
   document.documentElement.dataset.cinematicScrollBound = "true";
   let frame = 0;
+  let previousScrollY = window.scrollY;
   const update = () => {
     frame = 0;
-    document.documentElement.style.setProperty("--scroll-progress", `${window.scrollY}px`);
+    const scrollY = window.scrollY;
+    const root = document.documentElement;
+    root.style.setProperty("--scroll-progress", `${scrollY}px`);
+    root.dataset.scrollDirection = scrollY > previousScrollY ? "down" : scrollY < previousScrollY ? "up" : "idle";
+    const header = document.getElementById("header");
+    if (header) header.classList.toggle("scrolled", scrollY > 12);
+    previousScrollY = scrollY;
   };
   window.addEventListener("scroll", () => {
     if (!frame) frame = window.requestAnimationFrame(update);
@@ -784,7 +791,6 @@ function setupChrome() {
   const floatingWhatsApp = document.getElementById("floatingWhatsApp");
   if (floatingWhatsApp) floatingWhatsApp.onclick = () => openWhatsAppOrder(state.bag);
   $("#modal").onclick = (e) => { if (e.target.id === "modal") closeOverlays(); };
-  window.addEventListener("scroll", () => $("#header").classList.toggle("scrolled", scrollY > 12));
   $("#filterCategory").innerHTML = `<option value="">All categories</option>` + [...new Set(state.products.map((p) => p.category))].map((c) => `<option>${esc(c)}</option>`).join("");
   const runSearch = () => {
     const q = $("#searchInput").value.toLowerCase();

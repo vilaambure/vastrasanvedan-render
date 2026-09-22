@@ -309,6 +309,27 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -3; pointer-even
   .reveal-section.is-visible .product, .reveal-section.is-visible .scroller-item, .reveal-section.is-visible .brand-chip { animation: none; }
 }
 
+html { scroll-behavior: smooth; }
+body { scroll-padding-top: 84px; }
+.scroller, .rail { overscroll-behavior-inline: contain; scroll-padding-inline: 5%; -webkit-overflow-scrolling: touch; }
+.scroller-item, .product, .brand-chip, .collection-tile, .category-orb-image { will-change: transform; }
+.reveal-section { transform: translate3d(0, 28px, 0); transition: opacity .68s ease-out, transform .78s cubic-bezier(.16, 1, .3, 1); }
+.reveal-section.is-visible { transform: translate3d(0, 0, 0); }
+.reveal-section.is-visible .product,
+.reveal-section.is-visible .scroller-item,
+.reveal-section.is-visible .brand-chip { animation-timing-function: cubic-bezier(.16, 1, .3, 1); }
+.product:hover, .scroller-item:hover { transition-duration: .55s; }
+.header { transition: transform .45s cubic-bezier(.16, 1, .3, 1), background .3s ease, box-shadow .3s ease, min-height .3s ease; }
+@media (max-width: 700px) {
+  body { scroll-padding-top: 70px; }
+  .scroller, .rail { scroll-snap-type: x proximity; }
+  .reveal-section { transform: translate3d(0, 18px, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal-section { opacity: 1; transform: none; transition: none; }
+}
+
 /* Campaign composition */
 :root {
   --cinema-ink: #f8eee2;
