@@ -810,8 +810,6 @@ function setupChrome() {
     document.body.appendChild(mobileNav);
     mobileNav.querySelector("[data-mobile-search]").onclick = () => { openOverlay("searchOverlay"); $("#searchInput").focus(); };
   }
-  const floatingWhatsApp = document.getElementById("floatingWhatsApp");
-  if (floatingWhatsApp) floatingWhatsApp.onclick = () => openWhatsAppOrder(state.bag);
   $("#modal").onclick = (e) => { if (e.target.id === "modal") closeOverlays(); };
   $("#filterCategory").innerHTML = `<option value="">All categories</option>` + [...new Set(state.products.map((p) => p.category))].map((c) => `<option>${esc(c)}</option>`).join("");
   const runSearch = () => {
