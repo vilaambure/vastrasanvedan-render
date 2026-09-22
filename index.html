@@ -1714,7 +1714,7 @@
           return;
         }
         try {
-          const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`, { cache: 'no-store', credentials: 'same-origin' });
+          const response = await fetch(`/api/shop/products?q=${encodeURIComponent(query)}`, { cache: 'no-store', credentials: 'same-origin' });
           const result = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(result.message || 'Product search failed');
           renderProductSearchResults(result.products || []);
@@ -1728,10 +1728,10 @@
         barcodeScanInProgress = true;
         elements.scanBarcodeBtn.disabled = true;
         try {
-          const response = await fetch(`/api/products/search?barcode=${encodeURIComponent(barcode)}`, { cache: 'no-store', credentials: 'same-origin' });
+          const response = await fetch(`/api/shop/products?q=${encodeURIComponent(barcode)}`, { cache: 'no-store', credentials: 'same-origin' });
           const result = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(result.message || 'Product not found');
-          const product = result.product;
+          const product = (result.products || []).find((item) => String(item.barcode || '').trim() === barcode) || result.products?.[0];
           if (!product || !product._id) throw new Error('Product not found for this barcode.');
           selectProduct(product);
           if (Number(product.stock || 0) < 1) throw new Error('This product is out of stock.');

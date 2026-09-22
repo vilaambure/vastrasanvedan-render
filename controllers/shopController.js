@@ -17,7 +17,11 @@ async function listShopProducts(req, res) {
     const brand = String(req.query.brand || "").trim();
     const minPrice = Number(req.query.minPrice);
     const maxPrice = Number(req.query.maxPrice);
-    if (q) query.$and = [{ $or: [{ name: new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") }, { category: new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") }, { brand: new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") }] }];
+    if (q) {
+      const safeQuery = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const expression = new RegExp(safeQuery, "i");
+      query.$and = [{ $or: [{ name: expression }, { category: expression }, { brand: expression }, { barcode: expression }] }];
+    }
     if (category) query.category = category;
     if (brand) query.brand = brand;
     if (Number.isFinite(minPrice)) query.sellingPrice = { ...(query.sellingPrice || {}), $gte: minPrice };
