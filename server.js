@@ -50,6 +50,7 @@ app.get(["/admin.html", "/admin-login.html", "/admin.css", "/admin-app.js", "/ad
   res.sendFile(path.join(__dirname, req.path.replace(/^\//, "")));
 });
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "assets", "banners")));
 app.get("/vendor/jsbarcode.min.js", (_req, res) => {
   const filePath = path.join(__dirname, "node_modules", "jsbarcode", "dist", "JsBarcode.all.min.js");
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
